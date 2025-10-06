@@ -189,7 +189,7 @@
 
     <div class="events-grid">
         <?php
-        require_once './connexion.php';
+        require_once './includes/db.php';
         $events = $conn->query("SELECT * FROM evenements");
         $eventsList = $events->fetchAll();
 
