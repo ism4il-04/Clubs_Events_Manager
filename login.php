@@ -3,6 +3,34 @@ session_start();
 
 
 $conn = new PDO('mysql:host=localhost; dbname=clubs_events; charset=utf8', 'root', '');
+
+if(isset($_POST['participer'])){
+    $nom = $_POST['nom'];
+    $prenom = $_POST['prenom'];
+    $nom_utilisateur = $_POST['nom_utilisateur'];
+    $email = $_POST['email'];
+    $password= $_POST['password'];
+    $tel = $_POST['telephone'];
+    $date_naissance = $_POST['date_naissance'];
+    $annee = $_POST['annee'];
+    $filiere = $_POST['filiere'];
+
+
+
+}
+$user=$conn->prepare("insert into utilisateurs(email,password,nom_utilisateur) values (?,?,?)");
+$user->execute(array($email,$password,$nom_utilisateur));
+
+$participant = $conn->prepare("SELECT id FROM utilisateurs WHERE email = ? AND nom_utilisateur = ?");
+$participant->execute([$email, $nom_utilisateur]);
+$u = $participant->fetch(PDO::FETCH_ASSOC);
+$user_id = $u['id'] ?? null;
+
+// Insert into participants
+if ($user_id) {
+    $fin = $conn->prepare("INSERT INTO etudiants (id, filiere, annee, dateNaissance, prenom, nom, telephone) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $fin->execute([$user_id, $filiere, $annee, $date_naissance, $prenom, $nom, $tel]);
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -142,8 +170,11 @@ if(isset($_POST['login'])){
     $select = $conn->prepare( "SELECT * FROM utilisateurs WHERE email=? AND password=?");
     $select->execute(array($email,$password));
     $data = $select->fetch();
+
+    $_SESSION['id'] = $data['id'];
     $_SESSION['email'] = $data['email'];
     $_SESSION['password'] = $data['password'];
+    $_SESSION['nom_utilisateur'] = $data['nom_utilisateur'];
     }
 
 
