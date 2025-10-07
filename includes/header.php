@@ -9,6 +9,112 @@ function fetchInformations ($conn) {
 $club = fetchInformations($conn)[0];
 
 ?>
+<style>
+     *{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    background: linear-gradient(to bottom right, #f8fafc, #eff6ff, #e0e7ff);
+    font-family: Arial, Helvetica, sans-serif;
+    color: #1f2937;
+}
+
+header {
+    background: rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.header-container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 72px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.logo-box {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(to bottom right, #2563eb, #4338ca);
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 1rem;
+}
+
+.logo-box svg {
+    width: 24px;
+    height: 24px;
+    color: #fff;
+}
+
+.header-left h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.header-left p {
+    font-size: 0.875rem;
+    color: #4b5563;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-info {
+    text-align: right;
+}
+
+.user-info p:first-child {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+}
+
+.user-info p:last-child {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.logout-button {
+    display: flex;
+    align-items: center;
+    border: 1px solid #e5e7eb;
+    background: transparent;
+    padding: 0.4rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.logout-button:hover {
+    background: #f9fafb;
+}
+
+.logout-button svg {
+    width: 16px;
+    height: 16px;
+    margin-right: 0.4rem;
+}
+</style>
 <header>
     <div class="header-container">
         <div class="header-left">
@@ -20,12 +126,12 @@ $club = fetchInformations($conn)[0];
             </div>
             <div>
                 <h1>Portail Club</h1>
-                <p><?= htmlspecialchars($club["nom_abr"]) ?></p>
+                <p>InfoTech</p>
             </div>
         </div>
         <div class="header-right">
             <div class="user-info">
-                <p>Bonjour, <?= htmlspecialchars($club["clubNom"]); ?></p>
+                <p>Bonjour, </p>
                 <p>Club</p>
             </div>
             <form action="../logout.php" method="post">

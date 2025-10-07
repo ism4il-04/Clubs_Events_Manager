@@ -7,8 +7,8 @@ if (!isset($_SESSION['email'])) {
 
 require_once "../includes/db.php";
 function fetchEvents($conn) {
-    $stmt = $conn->prepare("SELECT * FROM evenements JOIN organisateur where organisateur.id = evenements.organisateur_id");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT * FROM evenements JOIN organisateur ON organisateur.id = evenements.organisateur_id WHERE organisateur_id=?");
+    $stmt->execute([$_SESSION['id']]);
     return $stmt->fetchAll();
 }
 
@@ -24,10 +24,10 @@ include "../includes/header.php";
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
     <!-- Bootstrap CSS -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<!-- Optional JS for modals, dropdowns, etc. -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Optional JS for modals, dropdowns, etc. -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../includes/script.js"></script>
 
 
     <title>My évents</title>
@@ -61,7 +61,7 @@ include "../includes/header.php";
                     <div class="event-content">
                         <div>
                             <div class="event-header">
-                                <h3 class="event-title"><?= htmlspecialchars($event['nom']) ?></h3>
+                                <h3 class="event-title"><?= htmlspecialchars($event['nomEvent']) ?></h3>
                     <?php
                         $status = $event['status'];
                                     $statusClass = [
@@ -133,7 +133,7 @@ include "../includes/header.php";
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="eventModalLabel<?= $event['id'] ?>"><?= htmlspecialchars($event['nom']) ?></h5>
+                            <h5 class="modal-title" id="eventModalLabel<?= $event['id'] ?>"><?= htmlspecialchars($event['nomEvent']) ?></h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
@@ -190,39 +190,5 @@ include "../includes/header.php";
 
 
     
-<script>
-function navigateTo(page) {
-    // Remove active class from all tabs
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    
-    // Add active class to clicked tab
-    event.target.classList.add('active');
-    
-    // Navigate to the selected page
-    window.location.href = page;
-}
-
-// Add hover effects for better UX
-document.addEventListener('DOMContentLoaded', function() {
-    const tabs = document.querySelectorAll('.tab');
-    
-    tabs.forEach(tab => {
-        // Add click feedback
-        tab.addEventListener('mousedown', function() {
-            this.style.transform = 'translateY(-1px) scale(0.98)';
-        });
-        
-        tab.addEventListener('mouseup', function() {
-            this.style.transform = '';
-        });
-        
-        tab.addEventListener('mouseleave', function() {
-            this.style.transform = '';
-        });
-    });
-});
-</script>
 </body>
 </html>

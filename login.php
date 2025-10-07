@@ -41,6 +41,7 @@ if(isset($_POST['login'])){
 
     // $_SESSION['id'] = $data['id'];
     if ($data) {
+        $_SESSION['id'] = $data['id'];
         $_SESSION['email'] = $data['email'];
         $_SESSION['password'] = $data['password'];
         $_SESSION['nom_utilisateur'] = $data['nom_utilisateur'];

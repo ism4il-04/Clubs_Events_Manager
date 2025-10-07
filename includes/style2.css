@@ -69,5 +69,3 @@ body { background: #f8fafc; margin: 0; font-family: 'Segoe UI', Arial, sans-seri
 @media (max-width: 900px) {
     .stats-row, .quick-actions { flex-direction: column; gap: 16px; }
     }
-
-    
