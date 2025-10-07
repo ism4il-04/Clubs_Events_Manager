@@ -2,7 +2,7 @@
 session_start();
 
 
-$conn = new PDO('mysql:host=localhost; dbname=clubs_events; charset=utf8', 'root', '');
+require_once "includes/db.php";
 
 if(isset($_POST['participer'])){
     $nom = $_POST['nom'];
@@ -30,6 +30,39 @@ if(isset($_POST['participer'])){
         $fin->execute([$user_id, $filiere, $annee, $date_naissance, $prenom, $nom, $tel]);
     }
 }
+
+if(isset($_POST['login'])){
+    $email = $_POST['email'];
+    $password=$_POST['password'];
+
+    $select = $conn->prepare('SELECT * FROM utilisateurs WHERE email=? AND password=?');
+    $select->execute(array($email,$password));
+    $data = $select->fetch();
+
+    // $_SESSION['id'] = $data['id'];
+    if ($data) {
+        $_SESSION['email'] = $data['email'];
+        $_SESSION['password'] = $data['password'];
+        $_SESSION['nom_utilisateur'] = $data['nom_utilisateur'];
+    }
+}
+
+
+// else{
+//     echo '<script type="text/javascript">';
+//     echo 'alert("invalid username or password");';
+//     echo 'window.location.href="login.php"';
+//     echo '</script>';
+
+// }
+if(isset($_SESSION['email'])){
+    if($_SESSION['email'] == 'admin@gmail.com'){
+    header("Location:./admin/dashboard.php");
+}elseif ($_SESSION['email'] == 'infotech@gmail.com'){
+        header("Location:./club/dashboard.php");
+    }
+}
+
 
 ?>
 <!DOCTYPE html>
@@ -163,35 +196,6 @@ if(isset($_POST['participer'])){
     <input class="btnn" type="submit" name="login" value="Connexion">
 </form>
 <?php
-if(isset($_POST['login'])){
-    $email = $_POST['email'];
-    $password=$_POST['password'];
-
-    $select = $conn->prepare( "SELECT * FROM utilisateurs WHERE email=? AND password=?");
-    $select->execute(array($email,$password));
-    $data = $select->fetch();
-
-    $_SESSION['id'] = $data['id'];
-    $_SESSION['email'] = $data['email'];
-    $_SESSION['password'] = $data['password'];
-    $_SESSION['nom_utilisateur'] = $data['nom_utilisateur'];
-    }
-
-
-// else{
-//     echo '<script type="text/javascript">';
-//     echo 'alert("invalid username or password");';
-//     echo 'window.location.href="login.php"';
-//     echo '</script>';
-
-// }
-if(isset($_SESSION['email'])){
-    if($_SESSION['email'] == 'admin@gmail.com'){
-    header("Location:./admin/dashboard.php");
-}elseif ($_SESSION['email'] == 'infotech@gmail.com'){
-        header("Location:./club/dashboard.php");
-    }
-}
 
 ?>
 </body>
