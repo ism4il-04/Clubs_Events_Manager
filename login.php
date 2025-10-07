@@ -147,18 +147,18 @@ if(isset($_POST['login'])){
     }
 
 
-//    } else{
-//        echo '<script type="text/javascript">';
-//        echo 'alert("invalid username or password");';
-//        echo 'window.location.href="login.php"';
-//        echo '</script>';
-//
-//}
+// else{
+//     echo '<script type="text/javascript">';
+//     echo 'alert("invalid username or password");';
+//     echo 'window.location.href="login.php"';
+//     echo '</script>';
+
+// }
 if(isset($_SESSION['email'])){
     if($_SESSION['email'] == 'admin@gmail.com'){
     header("Location:./admin/dashboard.php");
-}elseif ($_SESSION['email'] == 'club@gmail.com'){
-        header("Location:interface.php");
+}elseif ($_SESSION['email'] == 'infotech@gmail.com'){
+        header("Location:./club/dashboard.php");
     }
 }
 
