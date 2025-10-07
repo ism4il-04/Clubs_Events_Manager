@@ -16,21 +16,21 @@ if(isset($_POST['participer'])){
     $filiere = $_POST['filiere'];
 
 
+    $user=$conn->prepare("insert into utilisateurs(email,password,nom_utilisateur) values (?,?,?)");
+    $user->execute(array($email,$password,$nom_utilisateur));
 
-}
-$user=$conn->prepare("insert into utilisateurs(email,password,nom_utilisateur) values (?,?,?)");
-$user->execute(array($email,$password,$nom_utilisateur));
-
-$participant = $conn->prepare("SELECT id FROM utilisateurs WHERE email = ? AND nom_utilisateur = ?");
-$participant->execute([$email, $nom_utilisateur]);
-$u = $participant->fetch(PDO::FETCH_ASSOC);
-$user_id = $u['id'] ?? null;
+    $participant = $conn->prepare("SELECT id FROM utilisateurs WHERE email = ? AND nom_utilisateur = ?");
+    $participant->execute([$email, $nom_utilisateur]);
+    $u = $participant->fetch(PDO::FETCH_ASSOC);
+    $user_id = $u['id'] ?? null;
 
 // Insert into participants
-if ($user_id) {
-    $fin = $conn->prepare("INSERT INTO etudiants (id, filiere, annee, dateNaissance, prenom, nom, telephone) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $fin->execute([$user_id, $filiere, $annee, $date_naissance, $prenom, $nom, $tel]);
+    if ($user_id) {
+        $fin = $conn->prepare("INSERT INTO etudiants (id, filiere, annee, dateNaissance, prenom, nom, telephone) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $fin->execute([$user_id, $filiere, $annee, $date_naissance, $prenom, $nom, $tel]);
+    }
 }
+
 ?>
 <!DOCTYPE html>
 <html>
