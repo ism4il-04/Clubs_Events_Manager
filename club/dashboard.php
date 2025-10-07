@@ -27,6 +27,7 @@ $recent_events = [
     <title>Club Dashboard</title>
     <link rel="stylesheet" href="../includes/style.css">
     <link rel="stylesheet" href="../includes/style2.css">
+    <script src="../includes/script.js"></script>
     
 </head>
 <body>
@@ -67,10 +68,10 @@ $recent_events = [
     <!-- Tabs -->
     <div class="tabs">
         <div class="tab active">Tableau de bord</div>
-        <div class="tab">Mes événements</div>
-        <div class="tab">Participants</div>
-        <div class="tab">Communications</div>
-        <div class="tab">Certificats</div>
+        <div class="tab" onclick="navigateTo('evenements_clubs.php')">Mes événements</div>
+        <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
+        <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
+        <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
     </div>
 
     <!-- Stats -->
