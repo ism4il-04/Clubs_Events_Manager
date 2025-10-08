@@ -1,8 +1,7 @@
 <?php
 session_start();
 
-$conn = new PDO('mysql:host=localhost; dbname=clubs_events; charset=utf8', 'root', '');
-
+include './includes/db.php';
 // --- INSCRIPTION (participer) ---
 if (isset($_POST['participer'])) {
     $nom = $_POST['nom'];
@@ -51,7 +50,7 @@ if (isset($_POST['login'])) {
             header("Location: ./club/dashboard.php");
             exit;
         } else {
-            header("Location: index.php"); // utilisateur normal
+            header("Location: ./participant/dashboard.php");
             exit;
         }
     } else {
