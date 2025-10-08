@@ -204,7 +204,6 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                 
                 <!-- Participant Details Modal -->
                 <?php foreach ($demandes as $demande): ?>
-                    <?php echo("slm ".$demande['id']) ?>
                     <div class="modal fade participant-modal" id="participantModal<?= $demande['id']?>" tabindex="-1" aria-labelledby="participantModalLabel<?= $demande['id'] ?>" aria-hidden="true">
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
@@ -249,9 +248,23 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                                                     <span class="detail-value"><?= htmlspecialchars($demande['nomEvent'] ?? 'Non disponible') ?></span>
                                                 </div>
                                                 <div class="detail-item">
+                                                    <?php 
+                                                        $status = $demande['etat'];
+                                                        $statusClass = '';
+                                                        switch($status) {
+                                                            case 'Accepté':
+                                                                $statusClass = 'accepted';
+                                                                break;
+                                                            case 'Refusé':
+                                                                $statusClass = 'rejected';
+                                                                break;
+                                                            default:
+                                                                $statusClass = 'pending';
+                                                        }
+                                                        ?>
                                                     <span class="detail-label">Statut:</span>
                                                     <span class="detail-value">
-                                                        <span class="event-status status-pending">En attente</span>
+                                                        <span class="status-badge <?= $statusClass ?>"> <?= htmlspecialchars($demande['etat'] ?? 'Non disponible') ?> </span>
                                                     </span>
                                                 </div>
                                             </div>
