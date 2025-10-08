@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connexion.php';
+include '../includes/db.php';
 
 if (!isset($_SESSION['id'], $_POST['event_id'])) {
     header('Location: dashboard.php');
