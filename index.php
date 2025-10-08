@@ -165,16 +165,16 @@
     <h1>Plateforme Événements ENSA</h1>
     <nav>
         <a href="login.php">Connexion</a>
-        <a href="./participant/formulaire.php">Inscription Participant</a>
+        <a href="signup.php">Inscription Participant</a>
     </nav>
 </header>
 
 <section class="hero">
-    <h2>Bienvenue sur la plateforme officielle des événements 🎉</h2>
+    <h2>Bienvenue sur la plateforme officielle des événements 🗓️</h2>
     <p>Une solution simple et intuitive pour gérer, organiser et participer aux événements au sein de votre établissement. Que vous soyez étudiant, club ou administrateur, cette plateforme est faite pour vous.</p>
 
     <div class="cta-buttons">
-        <a href="./participant/formulaire.php" class="cta-btn">S'inscrire comme Participant</a>
+        <a href="signup.php" class="cta-btn">S'inscrire comme Participant</a>
         <a href="login.php" class="cta-btn">Se Connecter</a>
     </div>
 </section>
@@ -183,7 +183,7 @@
     <h3>Les rôles dans l'application</h3>
     <div class="roles-grid">
         <div class="role-card">
-            <div class="role-icon">👤</div>
+            <div class="role-icon">👨‍🎓</div>
             <div class="role-title">Participant</div>
             <div class="role-description">
                 Consultez les événements disponibles, inscrivez-vous facilement et restez informé en temps réel.
