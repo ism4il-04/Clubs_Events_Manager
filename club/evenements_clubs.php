@@ -108,18 +108,18 @@ include "../includes/header.php";
                 </div>
 
                         <div class="event-actions">
-                            <button type="button" class="btn-details" data-bs-toggle="modal" data-bs-target="#eventModal<?= $event['id'] ?>">
+                            <button type="button" class="btn-details" data-bs-toggle="modal" data-bs-target="#eventModal<?= $event['idEvent'] ?>">
                                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                                 </svg>
                                 Détails
                             </button>
                             
-                    <?php if (in_array($status, ['En attente'])): ?>
-                                <a href="edit_event.php?id=<?= $event['id'] ?>" class="btn-action btn-edit">Modifier</a>
-                                <a href="cancel_event.php?id=<?= $event['id'] ?>" class="btn-action btn-cancel">Annuler</a>
+                    <?php if (in_array($status, ['en attente'])): ?>
+                                <a href="edit_event.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-edit">Modifier</a>
+                                <a href="cancel_event.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
                     <?php elseif (in_array($status, ['Disponible', 'Sold out'])): ?>
-                                <a href="cancel_event.php?id=<?= $event['id'] ?>" class="btn-action btn-cancel">Annuler</a>
+                                <a href="cancel_event.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
                     <?php else: ?>
                                 <button class="btn-action btn-secondary" disabled>Aucune action</button>
                             <?php endif; ?>
@@ -129,11 +129,11 @@ include "../includes/header.php";
             </div>
             
             <!-- Event Details Modal -->
-            <div class="modal fade" id="eventModal<?= $event['id'] ?>" tabindex="-1" aria-labelledby="eventModalLabel<?= $event['id'] ?>" aria-hidden="true">
+            <div class="modal fade" id="eventModal<?= $event['idEvent'] ?>" tabindex="-1" aria-labelledby="eventModalLabel<?= $event['idEvent'] ?>" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="eventModalLabel<?= $event['id'] ?>"><?= htmlspecialchars($event['nomEvent']) ?></h5>
+                            <h5 class="modal-title" id="eventModalLabel<?= $event['idEvent'] ?>"><?= htmlspecialchars($event['nomEvent']) ?></h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
@@ -178,7 +178,7 @@ include "../includes/header.php";
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
                             <?php if (in_array($status, ['En attente'])): ?>
-                                <a href="edit_event.php?id=<?= $event['id'] ?>" class="btn btn-primary">Modifier</a>
+                                <a href="edit_event.php?id=<?= $event['idEvent'] ?>" class="btn btn-primary">Modifier</a>
                     <?php endif; ?>
                         </div>
                 </div>
