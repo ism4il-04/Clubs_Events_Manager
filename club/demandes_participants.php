@@ -13,7 +13,7 @@ function fetchDemandes($conn) {
     return $stmt->fetchAll();
 }
 function fetchEvents($conn) {
-    $stmt = $conn->prepare("SELECT * FROM evenements JOIN organisateur ON organisateur.id = evenements.organisateur_id WHERE organisateur_id=?" );
+    $stmt = $conn->prepare("SELECT nomEvent FROM evenements JOIN organisateur ON organisateur.id = evenements.organisateur_id WHERE organisateur_id=?" );
     $stmt->execute([$_SESSION['id']]);
     return $stmt->fetchAll();
 }
@@ -63,8 +63,13 @@ $demandes = fetchDemandes($conn);
                 </div>
 
                 <div class="col-md-3">
-                <label for="eventFilter" class="form-label">Nom de l'événement</label>
-                <input type="text" id="eventFilter" class="form-control" placeholder="Rechercher un événement...">
+                    <label for="eventFilter" class="form-label">Nom de l'événement</label>
+                    <select id="eventFilter" class="form-select">
+                        <option value="">Tous les événements</option>
+                        <?php foreach ($events as $event): ?>
+                        <option value="<?= htmlspecialchars($event['nomEvent']) ?>"><?= htmlspecialchars($event['nomEvent']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
         </div>
