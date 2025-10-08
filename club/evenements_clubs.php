@@ -141,7 +141,7 @@ include "../includes/header.php";
                                 <div class="col-md-6">
                                     <h6 class="text-muted mb-3">Informations générales</h6>
                                     <div class="mb-3">
-                                        <strong>Organisateur:</strong> <?= htmlspecialchars($event['clubNom']) ?>
+                                        <strong>Organisateur: </strong> <?= htmlspecialchars($event['clubNom']) ?>
                                     </div>
                                     <div class="mb-3">
                                         <strong>Description:</strong><br>
