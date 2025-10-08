@@ -104,7 +104,7 @@ $participations = $participations_stmt->fetchAll(PDO::FETCH_COLUMN);
         <h2>Portail Étudiant</h2>
         <p><?= htmlspecialchars($participant['nom'] . ' ' . $participant['prenom']) ?> • <?= htmlspecialchars($participant['annee'] . ' année • ' . $participant['filiere']) ?></p>
     </div>
-    <a href="logout.php"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</a>
+    <a href="../logout.php"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</a>
 </header>
 
 <nav class="nav">
