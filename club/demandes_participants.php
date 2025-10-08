@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
 }
 
 function fetchDemandes($conn, $statusFilter = '', $eventFilter = '') {
-    $sql = "SELECT * FROM utilisateurs NATURAL JOIN etudiants JOIN participation ON etudiant_id = etudiants.id JOIN evenements ON evenement_id=evenements.id WHERE organisateur_id=?";
+    $sql = "SELECT * FROM utilisateurs NATURAL JOIN etudiants JOIN participation ON etudiant_id = etudiants.id JOIN evenements ON evenement_id=evenements.idEvent WHERE organisateur_id=?";
     $params = [$_SESSION['id']];
     
     if (!empty($statusFilter)) {
@@ -204,11 +204,12 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                 
                 <!-- Participant Details Modal -->
                 <?php foreach ($demandes as $demande): ?>
-                    <div class="modal fade participant-modal" id="participantModal<?= $demande['id'] ?? rand(1000, 9999) ?>" tabindex="-1" aria-labelledby="participantModalLabel<?= $demande['id'] ?? rand(1000, 9999) ?>" aria-hidden="true">
+                    <?php echo("slm ".$demande['id']) ?>
+                    <div class="modal fade participant-modal" id="participantModal<?= $demande['id']?>" tabindex="-1" aria-labelledby="participantModalLabel<?= $demande['id'] ?>" aria-hidden="true">
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title" id="participantModalLabel<?= $demande['id'] ?? rand(1000, 9999) ?>">
+                                    <h5 class="modal-title" id="participantModalLabel<?= $demande['id']?>">
                                         <?= htmlspecialchars($demande['prenom'] . " " . $demande['nom']) ?>
                                     </h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -252,8 +253,8 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                                                     <span class="detail-value">
                                                         <span class="event-status status-pending">En attente</span>
                                                     </span>
+                                                </div>
                                             </div>
-
                                         </div>
                                     </div>
                                 </div>
