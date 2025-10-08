@@ -84,6 +84,7 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
     <div class="tabs">
         <div class="tab" onclick="navigateTo('dashboard.php')">Tableau de bord</div>
         <div class="tab" onclick="navigateTo('evenements_clubs.php')">Mes événements</div>
+        <div class="tab" onclick="navigateTo('ajouter_evenement.php')">Ajouter un événement</div>
         <div class="tab active">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
         <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>

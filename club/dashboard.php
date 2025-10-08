@@ -77,6 +77,7 @@ $recent_events = [
     <div class="tabs">
         <div class="tab active">Tableau de bord</div>
         <div class="tab" onclick="navigateTo('evenements_clubs.php')">Mes événements</div>
+        <div class="tab">Ajouter un événement</div>
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
         <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
@@ -127,7 +128,7 @@ $recent_events = [
                 <div class="action-content">
                     <h4>Créer un événement</h4>
                     <p>Lancez un nouvel événement pour votre club</p>
-                    <button class="btn-action-modern primary">Créer</button>
+                    <a href="ajouter_evenement.php" class="btn-action-modern primary">Créer</a>
                 </div>
             </div>
             <div class="action-card-modern">

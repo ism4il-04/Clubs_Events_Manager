@@ -29,6 +29,32 @@ include "../includes/header.php";
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../includes/script.js"></script>
 
+    <style>
+        .events-actions {
+            margin-top: 1rem;
+        }
+        
+        .events-actions .btn {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .events-actions .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+    </style>
 
     <title>My évents</title>
 </head>
@@ -37,6 +63,7 @@ include "../includes/header.php";
     <div class="tabs">
         <div class="tab" onclick="navigateTo('dashboard.php')">Tableau de bord</div>
         <div class="tab active">Mes événements</div>
+        <div class="tab" onclick="navigateTo('ajouter_evenement.php')">Ajouter un événement</div>
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
         <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
@@ -46,6 +73,11 @@ include "../includes/header.php";
         <div class="events-header">
             <h2>Mes Événements</h2>
             <p>Gérez et suivez vos événements en temps réel</p>
+            <div class="events-actions">
+                <a href="ajouter_evenement.php" class="btn btn-primary">
+                    ➕ Ajouter un événement
+                </a>
+            </div>
         </div>
         
         <div class="events-list">
@@ -105,7 +137,7 @@ include "../includes/header.php";
                                     Fin: <?= htmlspecialchars($event['dateFin']) ?> à <?= htmlspecialchars($event['heureFin']) ?>
                                 </div>
                             </div>
-                </div>
+                        </div>
 
                         <div class="event-actions">
                             <button type="button" class="btn-details" data-bs-toggle="modal" data-bs-target="#eventModal<?= $event['idEvent'] ?>">
@@ -115,12 +147,12 @@ include "../includes/header.php";
                                 Détails
                             </button>
                             
-                    <?php if (in_array($status, ['en attente'])): ?>
+                            <?php if (in_array($status, ['en attente'])): ?>
                                 <a href="edit_event.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-edit">Modifier</a>
                                 <a href="cancel_event.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
-                    <?php elseif (in_array($status, ['Disponible', 'Sold out'])): ?>
+                            <?php elseif (in_array($status, ['Disponible', 'Sold out'])): ?>
                                 <a href="cancel_event.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
-                    <?php else: ?>
+                            <?php else: ?>
                                 <button class="btn-action btn-secondary" disabled>Aucune action</button>
                             <?php endif; ?>
                         </div>
@@ -179,13 +211,13 @@ include "../includes/header.php";
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
                             <?php if (in_array($status, ['En attente'])): ?>
                                 <a href="edit_event.php?id=<?= $event['idEvent'] ?>" class="btn btn-primary">Modifier</a>
-                    <?php endif; ?>
+                            <?php endif; ?>
                         </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    <?php endforeach; ?>
-</div>
+        <?php endforeach; ?>
+    </div>
 </div>
 
 
