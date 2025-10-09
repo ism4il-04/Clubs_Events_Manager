@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
 <head>
     <meta charset="UTF-8">
     <title>Portail Étudiant</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="../pigeon2-removebg-preview.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         /* Base */

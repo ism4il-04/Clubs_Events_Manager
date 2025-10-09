@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Formulaire étudiant</title>
     <link rel="stylesheet" href="index.css">
+    <link rel="icon" type="image/png" sizes="16x16" href="../pigeon2-removebg-preview.png">
     <style>
         body {
             font-family: Arial, sans-serif;

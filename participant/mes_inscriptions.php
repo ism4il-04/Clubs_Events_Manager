@@ -28,6 +28,7 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="UTF-8">
     <title>Mes inscriptions - Portail Étudiant</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="../pigeon2-removebg-preview.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>

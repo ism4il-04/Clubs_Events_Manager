@@ -33,6 +33,7 @@ $recent_events = [
 <head>
     <meta charset="UTF-8">
     <title>Club Dashboard</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="../pigeon2-removebg-preview.png">
     <link rel="stylesheet" href="../includes/style.css">
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
