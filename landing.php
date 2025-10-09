@@ -164,7 +164,7 @@
         .main-content {
             min-height: 100vh;
             display: flex;
-            margin-top: 90px !important; /* 👈 force push below header */
+            margin-top: 20px !important; /* 👈 force push below header */
             align-items: center;
             justify-content: center;
             padding: 0 2rem;
@@ -225,14 +225,14 @@
         .hero-subtitle {
             font-size: 1.25rem;
             font-weight: 400;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             opacity: 0.9;
             line-height: 1.6;
         }
 
         .hero-features {
             list-style: none;
-            margin-bottom: 2.5rem;
+            margin-bottom: 1.5rem;
         }
 
         .hero-features li {
@@ -316,7 +316,7 @@
         .floating-cards {
             position: relative;
             width: 100%;
-            height: 400px;
+            height: 380px;
         }
 
         .card {
@@ -564,7 +564,6 @@
                 <ul class="hero-features">
                     <li>Création et gestion d'événements simplifiée</li>
                     <li>Inscription en ligne pour les participants</li>
-                    <li>Validation administrative automatisée</li>
                     <li>Suivi en temps réel des participations</li>
                 </ul>
                 <div class="cta-section">
