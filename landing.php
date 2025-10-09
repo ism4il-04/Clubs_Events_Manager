@@ -16,6 +16,11 @@
             box-sizing: border-box;
         }
 
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+
         html {
             scroll-behavior: smooth;
         }
@@ -27,6 +32,9 @@
             color: #333;
             line-height: 1.6;
             overflow-x: hidden;
+            overflow: auto; /* still scrollable */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;   
         }
 
         /* === ANIMATED BACKGROUND === */
