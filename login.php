@@ -74,7 +74,7 @@ if (isset($_POST['login'])) {
         body {
             margin: 0;
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(to right, #f0f4ff, #dfe9f3);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -90,7 +90,7 @@ if (isset($_POST['login'])) {
             text-align: center;
         }
         .logo {
-            display: flex;
+            display: block;
             align-items: center;
             justify-content: center;
             gap: 10px;
@@ -164,14 +164,17 @@ if (isset($_POST['login'])) {
         .back-home:hover {
             text-decoration: underline;
         }
+        .img{
+            width: 300px;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
 
 <div class="login-container">
     <div class="logo">
-        <i class="fa-solid fa-graduation-cap"></i>
-        <h1>Clubs Events</h1>
+        <img class="img" src="Horizontal_Logo-removebg-preview.png" alt="logo">
     </div>
 
     <form method="POST" action="login.php">
