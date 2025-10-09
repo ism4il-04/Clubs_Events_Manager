@@ -1,3 +1,8 @@
+<?php
+// Redirect to the new landing page
+header("Location: landing.php");
+exit();
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
