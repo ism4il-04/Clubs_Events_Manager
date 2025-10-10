@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../includes/style.css">
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -200,19 +201,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="form-container">
         <div class="form-header">
-            <h1>📅 Créer un nouvel événement</h1>
+            <h1><i class="bi bi-calendar-event me-2"></i>Créer un nouvel événement</h1>
             <p>Remplissez les informations ci-dessous pour créer votre événement</p>
         </div>
 
         <?php if (isset($success_message)): ?>
             <div class="alert alert-success">
-                <strong>✅ Succès !</strong> <?= htmlspecialchars($success_message) ?>
+                <strong><i class="bi bi-check-circle-fill me-1"></i>Succès !</strong> <?= htmlspecialchars($success_message) ?>
             </div>
         <?php endif; ?>
 
         <?php if (isset($error_message)): ?>
             <div class="alert alert-danger">
-                <strong>❌ Erreur :</strong> <?= htmlspecialchars($error_message) ?>
+                <strong><i class="bi bi-x-circle-fill me-1"></i>Erreur :</strong> <?= htmlspecialchars($error_message) ?>
             </div>
         <?php endif; ?>
 
@@ -286,10 +287,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="form-group">
                 <button type="submit" class="btn-submit">
-                    🚀 Créer l'événement
+                    <i class="bi bi-rocket-takeoff me-1"></i>Créer l'événement
                 </button>
                 <a href="evenements_clubs.php" class="btn-cancel">
-                    ❌ Annuler
+                    <i class="bi bi-x-circle me-1"></i>Annuler
                 </a>
             </div>
         </form>

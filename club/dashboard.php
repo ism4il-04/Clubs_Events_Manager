@@ -5,28 +5,27 @@ if (!isset($_SESSION['email'])) {
    exit();
 }
 require_once "../includes/db.php";
-function getTotalEvents($conn) {
-    $stmt = $conn->prepare("SELECT count(*) as c FROM evenements JOIN organisateur on organisateur_id=organisateur.id WHERE organisateur_id=? group by organisateur_id;");
-    $stmt->execute([$_SESSION['id']]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $result['total'] ?? 0;
+// Real statistics for the current club (organisateur)
+function fetchCount($conn, $sql, $params = []) {
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    return (int) $stmt->fetchColumn();
 }
 
-// Dummy data for demonstration
+$organisateurId = $_SESSION['id'];
+
 $stats = [
-    'total' => 3,
-    'pending' => 1,
-    'approved' => 1,
-    'rejected' => 1
+    'total'    => fetchCount($conn, "SELECT COUNT(*) FROM evenements WHERE organisateur_id = ?", [$organisateurId]),
+    'pending'  => fetchCount($conn, "SELECT COUNT(*) FROM evenements WHERE organisateur_id = ? AND status = 'En attente'", [$organisateurId]),
+    // Consider validated/approved as events that are available or ongoing/completed
+    'approved' => fetchCount($conn, "SELECT COUNT(*) FROM evenements WHERE organisateur_id = ? AND status IN ('Disponible','En cours','Terminé','Sold out')", [$organisateurId]),
+    'rejected' => fetchCount($conn, "SELECT COUNT(*) FROM evenements WHERE organisateur_id = ? AND status = 'Rejeté'", [$organisateurId])
 ];
-$recent_events = [
-    [
-        'title' => 'Conférence IA et Robotique',
-        'date' => '2024-11-15',
-        'location' => 'Amphithéâtre A',
-        'status' => 'En attente'
-    ]
-];
+
+// Recent events for this club
+$stmt = $conn->prepare("SELECT nomEvent AS title, dateDepart AS date, lieu AS location, status FROM evenements WHERE organisateur_id = ? ORDER BY dateDepart DESC LIMIT 5");
+$stmt->execute([$organisateurId]);
+$recent_events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -39,6 +38,7 @@ $recent_events = [
     <link rel="stylesheet" href="../includes/style.css">
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="../includes/script.js"></script>
     
 </head>
@@ -93,41 +93,51 @@ $recent_events = [
         </div>
         
         <!-- Statistics Cards -->
+        <style>
+            .stat-card-modern { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
+            .stat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+            .stat-title { color: #718096; font-size: 0.95rem; margin: 0; font-weight: 600; }
+            .stat-value { font-size: 2rem; font-weight: 700; color: #1a202c; margin: 0; }
+            .stat-icon { width: 44px; height: 44px; background: linear-gradient(135deg, rgba(102,126,234,.15), rgba(118,75,162,.15)); border-radius: 12px; display:flex; align-items:center; justify-content:center; }
+            .stat-icon i { font-size: 1.4rem; color: #667eea; }
+            .action-icon { width: 44px; height: 44px; background: linear-gradient(135deg, rgba(102,126,234,.15), rgba(118,75,162,.15)); border-radius: 12px; display:flex; align-items:center; justify-content:center; margin-bottom: 16px; }
+            .action-icon i { font-size: 1.3rem; color: #667eea; }
+        </style>
         <div class="stats-grid">
             <div class="stat-card-modern">
-                <div class="stat-icon">📊</div>
-                <div class="stat-content">
-                    <h3><?php echo $stats['total']; ?></h3>
-                    <p>Événements totaux</p>
+                <div class="stat-header">
+                    <p class="stat-title">Événements totaux</p>
+                    <div class="stat-icon"><i class="bi bi-bar-chart-fill"></i></div>
                 </div>
+                <div class="stat-value"><?php echo $stats['total']; ?></div>
             </div>
             <div class="stat-card-modern">
-                <div class="stat-icon">⏳</div>
-                <div class="stat-content">
-                    <h3><?php echo $stats['pending']; ?></h3>
-                    <p>En attente</p>
+                <div class="stat-header">
+                    <p class="stat-title">En attente</p>
+                    <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
                 </div>
+                <div class="stat-value"><?php echo $stats['pending']; ?></div>
             </div>
             <div class="stat-card-modern">
-                <div class="stat-icon">✅</div>
-                <div class="stat-content">
-                    <h3><?php echo $stats['approved']; ?></h3>
-                    <p>Approuvés</p>
+                <div class="stat-header">
+                    <p class="stat-title">Approuvés</p>
+                    <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
                 </div>
+                <div class="stat-value"><?php echo $stats['approved']; ?></div>
             </div>
             <div class="stat-card-modern">
-                <div class="stat-icon">❌</div>
-                <div class="stat-content">
-                    <h3><?php echo $stats['rejected']; ?></h3>
-                    <p>Rejetés</p>
+                <div class="stat-header">
+                    <p class="stat-title">Rejetés</p>
+                    <div class="stat-icon"><i class="bi bi-x-circle-fill"></i></div>
                 </div>
+                <div class="stat-value"><?php echo $stats['rejected']; ?></div>
             </div>
         </div>
         
         <!-- Quick Actions -->
         <div class="quick-actions-modern">
             <div class="action-card-modern">
-                <div class="action-icon">➕</div>
+                <div class="action-icon"><i class="bi bi-plus-circle"></i></div>
                 <div class="action-content">
                     <h4>Créer un événement</h4>
                     <p>Lancez un nouvel événement pour votre club</p>
@@ -135,7 +145,7 @@ $recent_events = [
                 </div>
             </div>
             <div class="action-card-modern">
-                <div class="action-icon">👥</div>
+                <div class="action-icon"><i class="bi bi-people-fill"></i></div>
                 <div class="action-content">
                     <h4>Gérer les participants</h4>
                     <p>Consultez et gérez les demandes de participation</p>
@@ -143,7 +153,7 @@ $recent_events = [
                 </div>
             </div>
             <div class="action-card-modern">
-                <div class="action-icon">📅</div>
+                <div class="action-icon"><i class="bi bi-calendar-event"></i></div>
                 <div class="action-content">
                     <h4>Mes événements</h4>
                     <p>Consultez tous vos événements et leur statut</p>
@@ -160,7 +170,7 @@ $recent_events = [
                     <div class="event-card">
                         <div class="event-card-inner">
                             <div class="event-image">
-                                <div class="event-icon">📅</div>
+                                <div class="event-icon"><i class="bi bi-calendar-event"></i></div>
                             </div>
                             <div class="event-content">
                                 <div>
