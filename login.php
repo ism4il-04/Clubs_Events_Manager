@@ -1,7 +1,13 @@
 <?php
 session_start();
 
+require_once 'vendor/autoload.php';
 include './includes/db.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+$secretKey = $_ENV['SECRET_KEY'];
+$siteKey = $_ENV['SITE_KEY'];
 // --- INSCRIPTION (participer) ---
 if (isset($_POST['participer'])) {
     $nom = $_POST['nom'];
@@ -33,7 +39,7 @@ if (isset($_POST['login'])) {
     $email = $_POST['email'];
     $password = $_POST['password'];
     $recaptcha = $_POST['g-recaptcha-response'];
-    $secret_key = '6LeUYuUrAAAAAJV1hLybPKuNUm9kAv0f7gnx6gLh';
+    $secret_key = $secretKey;
 
     // Hitting request to the URL, Google will
     // respond with success or error scenario
@@ -50,7 +56,7 @@ if (isset($_POST['login'])) {
 
     // Checking, if response is true or not
     if ($response->success == true) {
-        echo '<script>alert("Google reCAPTACHA verified")</script>';
+        echo '<script>alert("Google reCAPTCHA verified")</script>';
 
         $select = $conn->prepare("SELECT * FROM utilisateurs WHERE email = ? AND password = ?");
         $select->execute([$email, $password]);
@@ -62,21 +68,36 @@ if (isset($_POST['login'])) {
             $_SESSION['password'] = $data['password'];
             $_SESSION['nom_utilisateur'] = $data['nom_utilisateur'];
 
-            if ($_SESSION['email'] == 'admin@gmail.com') {
+            $adminCheck = $conn->prepare("SELECT id FROM admin WHERE id = ?");
+            $adminCheck->execute([$_SESSION['id']]);
+            $isAdmin = $adminCheck->fetch();
+
+            // Check if user is admin
+            if ($isAdmin) {
                 header("Location: ./admin/dashboard.php");
                 exit;
-            } elseif ($_SESSION['email'] == 'infotech@gmail.com') {
+            }
+
+            // Check if user is club
+            $clubCheck = $conn->prepare("SELECT id FROM organisateur WHERE id = ?");
+            $clubCheck->execute([$_SESSION['id']]);
+            $isClub = $clubCheck->fetch();
+
+            if ($isClub) {
                 header("Location: ./club/dashboard.php");
                 exit;
-            } else {
-                header("Location: ./participant/dashboard.php");
-                exit;
             }
+
+            // Else, it's a participant
+            header("Location: ./participant/dashboard.php");
+            exit;
+
         } else {
             echo "<script>alert('Email ou mot de passe incorrect.');</script>";
         }
+
     } else {
-        echo '<script>alert("Error in Google reCAPTACHA")</script>';
+        echo '<script>alert("Error in Google reCAPTCHA")</script>';
     }
 
 
@@ -216,7 +237,7 @@ if (isset($_POST['login'])) {
         <input type="password" name="password" id="password" placeholder="Entrez votre mot de passe" required>
 
         <div class="g-recaptcha"
-             data-sitekey="6LeUYuUrAAAAAOYH0f6FjmtZVnHA1CO8mO8bCLu4">
+             data-sitekey=<?= $siteKey; ?>>
         </div>
         <button class="btnn" type="submit" name="login">Se connecter</button>
     </form>

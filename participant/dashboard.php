@@ -7,26 +7,34 @@ if (!isset($_SESSION['id'])) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT * FROM etudiants natural join utilisateurs WHERE id = ?");
+$stmt = $conn->prepare("SELECT * FROM etudiants NATURAL JOIN utilisateurs WHERE id = ?");
 $stmt->execute([$_SESSION['id']]);
 $participant = $stmt->fetch(PDO::FETCH_ASSOC);
-$events = $conn->query("SELECT * FROM evenements ORDER BY dateDepart ASC")->fetchAll(PDO::FETCH_ASSOC);
+$events = $conn->query("SELECT * FROM evenements WHERE status='Disponible' ORDER BY dateDepart ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+// Get registration counts and categories
+$registrationCounts = [];
+$categories = [];
+foreach ($events as &$event) {
+    $countStmt = $conn->prepare("SELECT COUNT(*) as registered FROM participation WHERE evenement_id = ? AND etat = 'Accepté'");
+    $countStmt->execute([$event['idEvent']]);
+    $registrationCounts[$event['idEvent']] = $countStmt->fetch()['registered'];
+    $categories[] = $event['categorie'] ?? 'Non spécifiée';
+}
+$categories = array_unique($categories);
 
 $participations_stmt = $conn->prepare("SELECT evenement_id FROM participation WHERE etudiant_id = ?");
 $participations_stmt->execute([$_SESSION['id']]);
 $participations = $participations_stmt->fetchAll(PDO::FETCH_COLUMN);
 
-// Handle participation request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset($_POST['submit_participation'])) {
-    $event_id = $_POST['event_id'];
-    $commentaire = $_POST['commentaire'] ?? '';
-
-    $insert_stmt = $conn->prepare("INSERT INTO participation (etudiant_id, evenement_id, commentaire, date_demande) VALUES (?, ?, ?, NOW())");
-    if ($insert_stmt->execute([$_SESSION['id'], $event_id, $commentaire])) {
-        header('Location: dashboard.php?success=1');
-        exit;
-    }
-}
+// Prepare user information for modal
+$userInfo = [
+    'nom' => htmlspecialchars($participant['nom']),
+    'prenom' => htmlspecialchars($participant['prenom']),
+    'email' => htmlspecialchars($participant['email'] ?? 'N/A'),
+    'matricule' => htmlspecialchars($participant['nom_utilisateur'] ?? 'N/A'),
+    'filiere' => htmlspecialchars($participant['filiere'] ?? 'N/A')
+];
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -41,9 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
         body { background: #f5f7ff; color: #333; }
 
         /* Header */
-        .header { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);; color: #fff; padding: 20px 40px; border-radius: 0 0 15px 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .header { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 20px 40px; border-radius: 0 0 15px 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .header-left { display: flex; align-items: center; gap: 15px; }
-        .logo { width: 50px; height: 50px;  display: flex; align-items: center; justify-content: center; font-size: 24px; color: #1f3c88; }
+        .logo { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #1f3c88; }
         .header-info h2 { font-size: 1.6rem; font-weight: 600; margin-bottom: 3px; }
         .header-info p { font-size: 0.85rem; color: #c5d9f5; font-weight: 400; }
         .header-right { display: flex; align-items: center; gap: 20px; }
@@ -58,7 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
         .nav button:hover { background: #f0f3ff; color: #1f3c88; }
 
         /* Cards */
-        /* === Cards Modernized === */
         .cards {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -225,7 +232,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
             cursor: not-allowed;
         }
 
-
         /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); animation: fadeIn 0.3s; }
         @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
@@ -242,27 +248,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
         .modal-info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
         .modal-info-item { background: #f8f9fa; padding: 12px; border-radius: 8px; }
         .modal-info-item strong { display: block; color: #1f3c88; margin-bottom: 5px; font-size: 0.9rem; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
-        .form-group textarea { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; resize: vertical; min-height: 100px; transition: 0.3s; }
-        .form-group textarea:focus { outline: none; border-color: #1f3c88; }
-        .form-group textarea::placeholder { color: #aaa; }
-        .checkbox-group { display: flex; align-items: start; gap: 10px; margin-bottom: 20px; }
-        .checkbox-group input[type="checkbox"] { margin-top: 4px; width: 18px; height: 18px; cursor: pointer; }
-        .checkbox-group label { cursor: pointer; line-height: 1.5; }
         .modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 20px 25px; background: #f8f9fa; border-radius: 0 0 15px 15px; }
-        .btn-cancel, .btn-submit { padding: 10px 25px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.95rem; transition: 0.3s; }
+        .btn-cancel, .btn-submit, .btn-annuler { padding: 10px 25px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.95rem; transition: 0.3s; }
         .btn-cancel { background: #6c757d; color: #fff; }
         .btn-cancel:hover { background: #5a6268; }
         .btn-submit { background: #1f3c88; color: #fff; }
         .btn-submit:hover { background: #15306b; }
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-annuler { background: #dc3545; color: #fff; }
+        .btn-annuler:hover { background: #c82333; }
+
+        /* Alerts */
+        .alert {
+            padding: 15px 20px;
+            margin: 20px 60px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
 
         /* Responsive */
         @media (max-width: 768px) { .cards { padding: 20px 15px; grid-template-columns: 1fr; } .modal-content { width: 95%; margin: 10% auto; } .modal-info-row { grid-template-columns: 1fr; } }
-   .img{
-       width: 80px;
-   }
+        .img{ width: 80px; }
+
         /* Filter Bar */
         .filter-bar {
             display: flex;
@@ -291,7 +307,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
         .filter-bar select:focus {
             border-color: #1f3c88;
         }
-
     </style>
 </head>
 <body>
@@ -316,20 +331,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
     <a href="mes_certificats.php"><button>Mes certificats</button></a>
     <a href="profile.php"><button>Mon profil</button></a>
 </nav>
+
+<?php if (isset($_GET['success'])): ?>
+    <div class="alert alert-success">Votre demande de participation a été envoyée avec succès !</div>
+<?php endif; ?>
+
+<?php if (isset($_GET['cancelled'])): ?>
+    <div class="alert alert-success">Votre demande de participation a été annulée avec succès.</div>
+<?php endif; ?>
+
+<?php if (isset($_GET['error'])): ?>
+    <div class="alert alert-error">
+        <?php
+        switch ($_GET['error']) {
+            case 'already_requested':
+                echo 'Vous avez déjà demandé à participer à cet événement.';
+                break;
+            case 'insert_failed':
+                echo 'Erreur lors de l\'envoi de votre demande. Veuillez réessayer.';
+                break;
+            case 'cancel_failed':
+                echo 'Erreur lors de l\'annulation. Veuillez réessayer.';
+                break;
+            case 'database_error':
+                echo 'Erreur de base de données. Veuillez réessayer plus tard.';
+                break;
+            default:
+                echo 'Une erreur est survenue.';
+        }
+        ?>
+    </div>
+<?php endif; ?>
+
 <!-- Filter Bar -->
 <div class="filter-bar">
     <input type="text" id="searchInput" placeholder="Rechercher un événement...">
     <select id="statusFilter">
         <option value="">Tous les statuts</option>
-        <option value="en cours de traitement">En cours</option>
+        <option value="Disponible">Disponible</option>
         <option value="terminé">Terminé</option>
-        <option value="ouvert">Ouvert</option>
+        <option value="sold out">sold out</option>
     </select>
     <select id="categoryFilter">
         <option value="">Toutes les catégories</option>
-        <?php
-        $categories = array_unique(array_map(fn($e) => $e['categorie'], $events));
-        foreach ($categories as $cat): ?>
+        <option value="Non spécifiée">Non spécifiée</option>
+        <?php foreach ($categories as $cat): ?>
             <option value="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></option>
         <?php endforeach; ?>
     </select>
@@ -337,21 +383,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
 
 <div class="cards">
     <?php foreach ($events as $event): ?>
-        <?php $alreadyRequested = in_array($event['idEvent'], $participations); ?>
-        <div class="card">
+        <?php
+        $alreadyRequested = in_array($event['idEvent'], $participations);
+        $event['registeredCount'] = $registrationCounts[$event['idEvent']] ?? 0;
+        ?>
+        <div class="card" data-category="<?= htmlspecialchars($event['categorie'] ?? 'Non spécifiée') ?>">
             <div class="card-header">
                 <h3><?= htmlspecialchars($event['nomEvent']) ?></h3>
-                <?php if ($event['status'] === 'en cours de traitement'): ?>
-                    <span class="status orange">En cours</span>
+                <?php if ($event['status'] === 'Disponible'): ?>
+                    <span class="status green">Disponible</span>
                 <?php elseif ($event['status'] === 'terminé'): ?>
                     <span class="status gray">Terminé</span>
                 <?php else: ?>
-                    <span class="status green"><?= htmlspecialchars($event['status']) ?></span>
+                    <span class="status orange"><?= htmlspecialchars($event['status']) ?></span>
                 <?php endif; ?>
             </div>
 
             <div class="card-content">
-                <span class="category"><?= htmlspecialchars($event['categorie']) ?></span>
+                <span class="category"><?= htmlspecialchars($event['categorie'] ?? 'Non spécifiée') ?></span>
                 <p><?= htmlspecialchars($event['descriptionEvenement']) ?></p>
 
                 <div class="infos">
@@ -360,7 +409,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
                         <strong><?= htmlspecialchars($event['heureFin']) ?></strong>
                     </p>
                     <p><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($event['lieu']) ?></p>
-                    <p><i class="fa-solid fa-users"></i> <?= htmlspecialchars($event['places']) ?> places</p>
+                    <p><i class="fa-solid fa-users"></i>
+                        <?php
+                        $registered = $registrationCounts[$event['idEvent']] ?? 0;
+                        $available = max(0, $event['places'] - $registered);
+                        $isFull = $available <= 0;
+                        ?>
+                        <span class="places-info">
+                            <?php if ($isFull): ?>
+                                <span style="color: #dc3545; font-weight: bold;">Complet</span>
+                                (<?= $event['places'] ?>/<?= $event['places'] ?>)
+                            <?php else: ?>
+                                <?= $available ?> disponibles / <?= $event['places'] ?> total
+                            <?php endif; ?>
+                        </span>
+                    </p>
                 </div>
             </div>
 
@@ -373,7 +436,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
                 </div>
             </div>
         </div>
-
     <?php endforeach; ?>
 </div>
 
@@ -386,7 +448,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
         </div>
         <form method="POST" id="participationForm" action="mes_demandes.php">
             <div class="modal-body">
+                <!-- User Information Section -->
                 <div class="modal-section">
+                    <h3>Vos Informations</h3>
+                    <div class="modal-info-row">
+                        <div class="modal-info-item">
+                            <strong>Nom Complet</strong>
+                            <p id="modalUserName"><?= $userInfo['nom'] . ' ' . $userInfo['prenom'] ?></p>
+                        </div>
+                        <div class="modal-info-item">
+                            <strong>Email</strong>
+                            <p id="modalUserEmail"><?= $userInfo['email'] ?></p>
+                        </div>
+                        <div class="modal-info-item">
+                            <strong>Nom utilisateur</strong>
+                            <p id="modalUserMatricule"><?= $userInfo['matricule'] ?></p>
+                        </div>
+                        <div class="modal-info-item">
+                            <strong>Filière</strong>
+                            <p id="modalUserFiliere"><?= $userInfo['filiere'] ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Information Section -->
+                <div class="modal-section">
+                    <h3>Catégorie</h3>
                     <p id="modalClub" style="color:#666;font-style:italic;"></p>
                 </div>
                 <div class="modal-section">
@@ -398,30 +485,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
                     <div class="modal-info-item"><strong>Lieu</strong><p id="modalLieu"></p></div>
                 </div>
                 <div class="modal-section" style="margin-top: 15px;">
-                    <div class="modal-info-item"><strong>Places</strong><p id="modalPlaces"></p></div>
-                </div>
-                <div class="modal-section">
-                    <h3>Informations Étudiant</h3>
-                    <div class="modal-info-item"><strong>Nom & Prénom</strong><p><?= htmlspecialchars($participant['nom'] . ' ' . $participant['prenom']) ?></p></div>
-                    <div class="modal-info-item"><strong>Email</strong><p><?= htmlspecialchars($participant['email']) ?></p></div>
-                    <div class="modal-info-item"><strong>Filière</strong><p><?= htmlspecialchars($participant['filiere'] ?? '-') ?></p></div>
+                    <div class="modal-info-item">
+                        <strong>Capacité</strong>
+                        <p id="modalCapacityInfo">
+                            <span id="modalCapacity"></span> places disponibles sur <span id="modalMaxPlaces"></span> total
+                        </p>
+                    </div>
                 </div>
                 <div class="modal-section participation-form" style="display: none;">
                     <h3>S'inscrire à cet événement</h3>
-                    <div class="form-group">
-                        <label>Commentaire (optionnel)</label>
-                        <textarea name="commentaire" placeholder="Pourquoi souhaitez-vous participer à cet événement ?"></textarea>
-                    </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="acceptTerms" required>
-                        <label for="acceptTerms">J'accepte les conditions de participation et le règlement de l'événement</label>
-                    </div>
+                    <input type="hidden" name="event_id" id="modalEventId">
+                    <input type="hidden" name="submit_participation" value="1">
                 </div>
-                <input type="hidden" name="event_id" id="modalEventId">
-                <input type="hidden" name="submit_participation" value="1">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeModal()">Fermer</button>
+                <button type="button" class="btn-annuler" onclick="cancelParticipation()" style="display: none;">Annuler la demande</button>
                 <button type="submit" name="participer" class="btn-submit" id="submitBtn" style="display: none;">Demander participation</button>
             </div>
         </form>
@@ -429,88 +508,195 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
 </div>
 
 <script>
-    const modal = document.getElementById('eventModal');
-    const submitBtn = document.getElementById('submitBtn');
-    const acceptTerms = document.getElementById('acceptTerms');
-
-    acceptTerms.addEventListener('change', function() {
-        submitBtn.disabled = !this.checked;
-    });
-
-    function openModal(event, alreadyRequested) {
-        document.getElementById('modalTitle').textContent = event.nomEvent;
-        document.getElementById('modalClub').textContent = event.categorie;
-        document.getElementById('modalDescription').textContent = event.descriptionEvenement;
-        document.getElementById('modalPeriod').innerHTML = `${event.dateDepart} au ${event.dateFin}<br>${event.heureDepart} - ${event.heureFin}`;
-        document.getElementById('modalLieu').textContent = event.lieu;
-        document.getElementById('modalPlaces').textContent = event.places;
-        document.getElementById('modalEventId').value = event.idEvent;
-
-        // Handle participation form visibility
-        const participationForm = document.querySelector('.participation-form');
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('eventModal');
         const submitBtn = document.getElementById('submitBtn');
 
-        if (alreadyRequested) {
-            participationForm.style.display = 'none';
-            submitBtn.style.display = 'none';
-        } else {
-            participationForm.style.display = 'block';
-            submitBtn.style.display = 'inline-block';
+        if (!modal || !submitBtn) {
+            console.error('Modal elements not found!');
+            return;
         }
 
-        document.getElementById('participationForm').reset();
-        submitBtn.disabled = true;
+        window.openModal = function(event, alreadyRequested) {
+            console.log('openModal called with:', { event, alreadyRequested });
 
-        modal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-    }
+            const modalTitle = document.getElementById('modalTitle');
+            const modalClub = document.getElementById('modalClub');
+            const modalDescription = document.getElementById('modalDescription');
+            const modalPeriod = document.getElementById('modalPeriod');
+            const modalLieu = document.getElementById('modalLieu');
+            const modalEventId = document.getElementById('modalEventId');
+            const modalCapacityInfo = document.getElementById('modalCapacityInfo');
+            const modalUserName = document.getElementById('modalUserName');
+            const modalUserEmail = document.getElementById('modalUserEmail');
+            const modalUserMatricule = document.getElementById('modalUserMatricule');
+            const modalUserFiliere = document.getElementById('modalUserFiliere');
 
-    function closeModal() {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
+            if (!modalTitle || !modalClub || !modalDescription || !modalPeriod || !modalLieu ||
+                !modalEventId || !modalCapacityInfo || !modalUserName || !modalUserEmail ||
+                !modalUserMatricule || !modalUserFiliere) {
+                console.error('Modal form elements not found!');
+                return;
+            }
 
-    window.onclick = function(event) {
-        if (event.target == modal) { closeModal(); }
-    }
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape' && modal.style.display === 'block') { closeModal(); }
-    });
+            const participationForm = document.getElementById('participationForm');
+            if (participationForm) {
+                participationForm.reset();
+            }
 
-    // Filtering logic
-    const searchInput = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
-    const categoryFilter = document.getElementById('categoryFilter');
-    const cardsContainer = document.querySelector('.cards');
-    const cards = Array.from(cardsContainer.children);
+            modalTitle.textContent = event.nomEvent;
+            modalClub.textContent = event.categorie ? event.categorie : 'Non spécifiée';
+            modalDescription.textContent = event.descriptionEvenement;
+            modalPeriod.innerHTML = `${event.dateDepart} au ${event.dateFin}<br>${event.heureDepart} - ${event.heureFin}`;
+            modalLieu.textContent = event.lieu;
+            modalEventId.value = event.idEvent;
 
-    function filterEvents() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedStatus = statusFilter.value.toLowerCase();
-        const selectedCategory = categoryFilter.value.toLowerCase();
+            modalUserName.textContent = '<?= $userInfo['nom'] . ' ' . $userInfo['prenom'] ?>';
+            modalUserEmail.textContent = '<?= $userInfo['email'] ?>';
+            modalUserMatricule.textContent = '<?= $userInfo['matricule'] ?>';
+            modalUserFiliere.textContent = '<?= $userInfo['filiere'] ?>';
 
-        cards.forEach(card => {
-            const title = card.querySelector('.card-header h3').textContent.toLowerCase();
-            const statusEl = card.querySelector('.status');
-            const status = statusEl ? statusEl.textContent.toLowerCase() : '';
-            const categoryText = card.querySelector('p strong')?.nextSibling?.textContent?.trim().toLowerCase() || '';
+            const registeredCount = event.registeredCount || 0;
+            const maxPlaces = event.places;
+            const availablePlaces = Math.max(0, maxPlaces - registeredCount);
 
-            const matchesSearch = title.includes(searchTerm);
-            const matchesStatus = !selectedStatus || status.includes(selectedStatus);
-            const matchesCategory = !selectedCategory || categoryText.includes(selectedCategory);
-
-            if (matchesSearch && matchesStatus && matchesCategory) {
-                card.style.display = 'flex';
+            if (availablePlaces <= 0) {
+                modalCapacityInfo.innerHTML = `<span style="color: #dc3545; font-weight: bold;">Événement complet</span><br>(${maxPlaces}/${maxPlaces} places occupées)`;
             } else {
-                card.style.display = 'none';
+                modalCapacityInfo.innerHTML = `${availablePlaces} places disponibles sur ${maxPlaces} total<br>(${registeredCount} places déjà occupées)`;
+            }
+
+            const participationFormSection = document.querySelector('.participation-form');
+            const cancelBtn = document.querySelector('.btn-annuler');
+
+            if (!participationFormSection || !cancelBtn) {
+                console.error('Participation form elements not found!');
+                return;
+            }
+
+            const hasAlreadyRequested = alreadyRequested === true || alreadyRequested === 1 || alreadyRequested === "true";
+
+            if (hasAlreadyRequested) {
+                participationFormSection.style.display = 'none';
+                submitBtn.style.display = 'none';
+                cancelBtn.style.display = 'inline-block';
+            } else {
+                const isEventFull = registeredCount >= maxPlaces;
+
+                if (isEventFull) {
+                    participationFormSection.style.display = 'none';
+                    submitBtn.style.display = 'none';
+                    cancelBtn.style.display = 'none';
+
+                    const fullMessage = document.createElement('div');
+                    fullMessage.className = 'alert alert-error';
+                    fullMessage.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Cet événement est complet. Vous ne pouvez plus vous inscrire.';
+                    participationFormSection.parentNode.insertBefore(fullMessage, participationFormSection);
+                } else {
+                    participationFormSection.style.display = 'block';
+                    submitBtn.style.display = 'inline-block';
+                    cancelBtn.style.display = 'none';
+                }
+            }
+
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeModal = function() {
+            console.log('closeModal called');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        };
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                console.log('Modal clicked outside, closing');
+                window.closeModal();
+            }
+        };
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && modal && modal.style.display === 'block') {
+                console.log('Escape key pressed, closing modal');
+                window.closeModal();
             }
         });
-    }
 
-    searchInput.addEventListener('input', filterEvents);
-    statusFilter.addEventListener('change', filterEvents);
-    categoryFilter.addEventListener('change', filterEvents);
+        window.cancelParticipation = function() {
+            const eventId = document.getElementById('modalEventId');
+            if (!eventId) {
+                console.error('Modal event ID element not found!');
+                return;
+            }
 
+            if (confirm('Êtes-vous sûr de vouloir annuler votre demande de participation ?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'mes_demandes.php';
+
+                const eventInput = document.createElement('input');
+                eventInput.type = 'hidden';
+                eventInput.name = 'event_id';
+                eventInput.value = eventId.value;
+
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'annuler';
+                actionInput.value = '1';
+
+                form.appendChild(eventInput);
+                form.appendChild(actionInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        };
+
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const cardsContainer = document.querySelector('.cards');
+        const cards = cardsContainer ? Array.from(cardsContainer.children) : [];
+
+        if (searchInput && statusFilter && categoryFilter && cards.length > 0) {
+            const filterEvents = function() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                const selectedStatus = statusFilter.value.toLowerCase();
+                let selectedCategory = categoryFilter.value.toLowerCase();
+
+                if (selectedCategory === 'non spécifiée') {
+                    selectedCategory = '';
+                }
+
+                cards.forEach(card => {
+                    const title = card.querySelector('.card-header h3')?.textContent.toLowerCase() || '';
+                    const statusEl = card.querySelector('.status');
+                    const status = statusEl ? statusEl.textContent.toLowerCase() : '';
+                    const categoryEl = card.querySelector('.category');
+                    const category = categoryEl ? categoryEl.textContent.toLowerCase() : '';
+
+                    const matchesSearch = !searchTerm || title.includes(searchTerm);
+                    const matchesStatus = !selectedStatus || status.includes(selectedStatus);
+                    const matchesCategory = !selectedCategory || category === selectedCategory;
+
+                    if (matchesSearch && matchesStatus && matchesCategory) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            };
+
+            searchInput.addEventListener('input', filterEvents);
+            statusFilter.addEventListener('change', filterEvents);
+            categoryFilter.addEventListener('change', filterEvents);
+            filterEvents();
+        }
+
+        console.log('Dashboard JavaScript initialized successfully');
+    });
 </script>
 </body>
 </html>
