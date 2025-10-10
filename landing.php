@@ -6,6 +6,7 @@
     <title>Clubs & Events Manager - ENSA Tétouan</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="icon" type="image/png" sizes="16x16" href="pigeon2-removebg-preview.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* === RESET === */
@@ -14,6 +15,11 @@
             padding: 0;
             box-sizing: border-box;
         }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
 
         html {
             scroll-behavior: smooth;
@@ -26,6 +32,9 @@
             color: #333;
             line-height: 1.6;
             overflow-x: hidden;
+            overflow: auto; /* still scrollable */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;   
         }
 
         /* === ANIMATED BACKGROUND === */

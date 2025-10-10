@@ -15,6 +15,20 @@ $participant_id = $_SESSION['id'];
 $stmt = $conn->prepare("SELECT * FROM etudiants WHERE id = ?");
 $stmt->execute([$participant_id]);
 $participant = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if(isset($_POST['upload'])){
+    if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = "uploads/";
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+        $file = basename($_FILES['file']['name']);
+        move_uploaded_file($_FILES['file']['tmp_name'], $uploadDir . $file);
+    } else {
+        $file = $_POST['file'] ?? "";
+    }
+
+    $photo=$conn->prepare("UPDATE etudiants SET photo=? WHERE id = ?");
+    $photo->execute([$file, $_SESSION['id']]);
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -22,6 +36,7 @@ $participant = $stmt->fetch(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <title>Mon profil - Portail Étudiant</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="16x16" href="../pigeon2-removebg-preview.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         /* ---- Your existing styles (header, nav, etc.) ---- */
@@ -40,14 +55,14 @@ $participant = $stmt->fetch(PDO::FETCH_ASSOC);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #004aad;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
             padding: 20px 40px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .header-left { display: flex; align-items: center; gap: 15px; }
         .logo {
-            width: 50px; height: 50px; background: white; border-radius: 12px;
+            width: 50px; height: 50px;
             display: flex; align-items: center; justify-content: center;
             font-size: 24px; color: #004aad;
         }
@@ -158,13 +173,16 @@ $participant = $stmt->fetch(PDO::FETCH_ASSOC);
         @media (max-width: 600px) {
             .form-row { flex-direction: column; }
         }
+        .img{
+            width: 80px;
+        }
     </style>
 </head>
 <body>
 
 <header class="header">
     <div class="header-left">
-        <div class="logo"><i class="fas fa-graduation-cap"></i></div>
+        <div class="logo"><img class="img" src="../Circle_BLACK_Logo-removebg-preview.png" alt="logo"></div>
         <div class="header-info">
             <h2>Portail Étudiant</h2>
             <p>ENSA Tétouan - École Nationale des Sciences Appliquées</p>
@@ -181,7 +199,7 @@ $participant = $stmt->fetch(PDO::FETCH_ASSOC);
 <nav class="nav">
     <a href="dashboard.php"><button>Tous les événements</button></a>
     <a href="mes_inscriptions.php"><button>Mes inscriptions</button></a>
-    <a href="#"><button>Mes certificats</button></a>
+    <a href="mes_certificats.php"><button>Mes certificats</button></a>
     <a href="profile.php"><button class="active">Mon profil</button></a>
 </nav>
 
@@ -192,6 +210,15 @@ $participant = $stmt->fetch(PDO::FETCH_ASSOC);
     </div>
 
     <form method="POST" class="profile-form">
+        <div class="form-row">
+            <div class="form-group">
+                <form method="post" action="profile.php" enctype="multipart/form-data">
+                <label for="photo">vous pouvez ajouter une photo</label>
+                <input type="file" name="file">
+                <input type="submit" name="upload" value="upload">
+                </form>
+            </div>
+        </div>
         <div class="form-row">
             <div class="form-group">
                 <label for="nom">Nom</label>

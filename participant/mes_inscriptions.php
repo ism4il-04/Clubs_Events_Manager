@@ -28,6 +28,7 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="UTF-8">
     <title>Mes inscriptions - Portail Étudiant</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="../pigeon2-removebg-preview.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
@@ -50,7 +51,7 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #004aad;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
             padding: 20px 40px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -65,8 +66,8 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
         .logo {
             width: 50px;
             height: 50px;
-            background: white;
-            border-radius: 12px;
+            /*background: white;*/
+            /*border-radius: 12px;*/
             display: flex;
             align-items: center;
             justify-content: center;
@@ -363,15 +364,16 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 gap: 12px;
             }
         }
+        .img{
+            width: 80px;
+        }
     </style>
 </head>
 <body>
 
 <header class="header">
     <div class="header-left">
-        <div class="logo">
-            <i class="fas fa-graduation-cap"></i>
-        </div>
+        <div class="logo"><img class="img" src="../Circle_BLACK_Logo-removebg-preview.png" alt="logo"></div>
         <div class="header-info">
             <h2>Portail Étudiant</h2>
             <p>ENSA Tétouan - École Nationale des Sciences Appliquées</p>
@@ -392,7 +394,7 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <a href="mes_inscriptions.php">
         <button class="active">Mes inscriptions</button>
     </a>
-    <a href="#">
+    <a href="mes_certificats.php">
         <button>Mes certificats</button>
     </a>
     <a href="profile.php">
