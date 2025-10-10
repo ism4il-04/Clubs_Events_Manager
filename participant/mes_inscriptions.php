@@ -138,16 +138,8 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
             position: relative;
         }
 
-        .nav button.active {
-            color: #004aad;
-            border-bottom-color: #004aad;
-            background: #f8fbff;
-        }
-
-        .nav button:hover {
-            background: #f8fbff;
-            color: #004aad;
-        }
+        .nav button.active { color: #1f3c88; border-bottom-color: #1f3c88; background: #f0f3ff; }
+        .nav button:hover { background: #f0f3ff; color: #1f3c88; }
 
         /* Main container */
         .container {

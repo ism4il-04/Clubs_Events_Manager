@@ -33,6 +33,8 @@ $recent_events = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <title>Club Dashboard</title>
     <link rel="icon" type="image/png" sizes="16x16" href="../pigeon2-removebg-preview.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
     <link rel="stylesheet" href="../includes/style.css">
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
