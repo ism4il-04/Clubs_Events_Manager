@@ -8,26 +8,18 @@ require_once "../includes/db.php";
 include "../includes/header.php";
 
 // Handle actions
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_POST['email'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
-    $email = $_POST['email'];
     
     try {
-        if ($action === 'valider') {
-            $stmt = $conn->prepare("UPDATE participation SET status = 'Accepté' WHERE etudiant_id = (SELECT id FROM etudiants WHERE email = ?)");
-            $stmt->execute([$email]);
-            $message = "Demande validée avec succès !";
-        } elseif ($action === 'refuser') {
-            $stmt = $conn->prepare("UPDATE participation SET status = 'Refusé' WHERE etudiant_id = (SELECT id FROM etudiants WHERE email = ?)");
-            $stmt->execute([$email]);
-            $message = "Demande refusée.";
-        }
-        
+        traiterDemande($conn,$_POST["idEtu"],$_POST['idEve'], $_POST["action"]);
+        $message = $action === 'Accepté' ? "Demande validée avec succès." : "Demande refusée avec succès.";
         // Redirect to prevent form resubmission
-        header("Location: demandes_participants.php?message=" . urlencode($message));
+        header("Location: demandes_participants.php?message=" . urlencode($message." ".$_POST["idEtu"]." ".$_POST["idEve"]." ".$_POST["action"]));
         exit();
     } catch (Exception $e) {
         $error = "Erreur lors du traitement de la demande.";
+        echo $e->getMessage();
     }
 }
 
@@ -56,6 +48,11 @@ function fetchEvents($conn) {
     $stmt = $conn->prepare("SELECT nomEvent FROM evenements JOIN organisateur ON organisateur.id = evenements.organisateur_id WHERE organisateur_id=?" );
     $stmt->execute([$_SESSION['id']]);
     return $stmt->fetchAll();
+}
+
+function traiterDemande($conn, $etu, $event, $rep) {
+    $stmt = $conn->prepare("UPDATE participation SET etat = ? WHERE etudiant_id = ? AND evenement_id = ?");
+    $stmt->execute([$rep, $etu, $event]);
 }
 
 // Get filter values
@@ -188,15 +185,17 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                                     <button class="btn btn-view" data-bs-toggle="modal" data-bs-target="#participantModal<?= $demande['id'] ?>">Voir détails</button>
                                     
                                     <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="email" value="<?= htmlspecialchars($demande['email']) ?>">
-                                        <input type="hidden" name="action" value="valider">
+                                        <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                        <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                        <input type="hidden" name="action" value="Accepté">
                                         <button type="submit" class="btn btn-validate" onclick="return confirm('Êtes-vous sûr de vouloir valider cette demande ?')">Valider</button>
                                     </form>
                                     
                                     <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="email" value="<?= htmlspecialchars($demande['email']) ?>">
-                                        <input type="hidden" name="action" value="refuser">
-                                        <button type="submit" class="btn btn-reject" onclick="return confirm('Êtes-vous sûr de vouloir refuser cette demande ?')">Refuser</button>
+                                        <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                        <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                        <input type="hidden" name="action" value="Refusé">
+                                        <button type="submit" class="btn btn-reject" >Refuser</button>
                                     </form>
                                 </td>
                             </tr>
@@ -275,8 +274,18 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                                    <button class="btn btn-validate" onclick="handleAction('valider', '<?= htmlspecialchars($demande['email']) ?>')">Valider la demande</button>
-                                    <button class="btn btn-reject" onclick="handleAction('refuser', '<?= htmlspecialchars($demande['email']) ?>')">Refuser la demande</button>
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                        <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                        <input type="hidden" name="action" value="Accepté">
+                                        <button type="submit" class="btn btn-validate" onclick="return confirm('Êtes-vous sûr de vouloir valider cette demande ?')">Valider la demande</button>
+                                    </form>
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                        <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                        <input type="hidden" name="action" value="Refusé">
+                                        <button type="submit" class="btn btn-reject" onclick="return confirm('Êtes-vous sûr de vouloir refuser cette demande ?')">Refuser la demande</button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
