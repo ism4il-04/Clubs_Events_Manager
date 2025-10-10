@@ -56,6 +56,7 @@ $recent_events = $stmt->fetchAll();
     <link rel="stylesheet" href="../includes/style.css">
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="../includes/script.js"></script>
     <style>
         .dashboard-container {
@@ -228,28 +229,28 @@ $recent_events = $stmt->fetchAll();
     <!-- Statistics Cards -->
     <div class="stats-grid">
         <div class="stat-card-modern">
-            <div class="stat-icon">📊</div>
+            <div class="stat-icon"><i class="bi bi-bar-chart-fill"></i></div>
             <div class="stat-content">
                 <h3><?php echo $stats['total_events']; ?></h3>
                 <p>Événements totaux</p>
             </div>
         </div>
         <div class="stat-card-modern">
-            <div class="stat-icon">⏳</div>
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
             <div class="stat-content">
                 <h3><?php echo $stats['pending_events']; ?></h3>
                 <p>En attente de validation</p>
             </div>
         </div>
         <div class="stat-card-modern">
-            <div class="stat-icon">🏫</div>
+            <div class="stat-icon"><i class="bi bi-building"></i></div>
             <div class="stat-content">
                 <h3><?php echo $stats['total_clubs']; ?></h3>
                 <p>Clubs actifs</p>
             </div>
         </div>
         <div class="stat-card-modern">
-            <div class="stat-icon">👥</div>
+            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
             <div class="stat-content">
                 <h3><?php echo $stats['total_participants']; ?></h3>
                 <p>Participants inscrits</p>
@@ -260,7 +261,7 @@ $recent_events = $stmt->fetchAll();
     <!-- Quick Actions -->
     <div class="quick-actions-modern">
         <div class="action-card-modern">
-            <div class="action-icon">📋</div>
+            <div class="action-icon"><i class="bi bi-clipboard-check"></i></div>
             <div class="action-content">
                 <h4>Gérer les demandes</h4>
                 <p>Validez ou refusez les événements proposés par les clubs</p>
@@ -268,7 +269,7 @@ $recent_events = $stmt->fetchAll();
             </div>
         </div>
         <div class="action-card-modern">
-            <div class="action-icon">📅</div>
+            <div class="action-icon"><i class="bi bi-calendar-event"></i></div>
             <div class="action-content">
                 <h4>Tous les événements</h4>
                 <p>Consultez et gérez tous les événements de la plateforme</p>
@@ -276,7 +277,7 @@ $recent_events = $stmt->fetchAll();
             </div>
         </div>
         <div class="action-card-modern">
-            <div class="action-icon">🏫</div>
+            <div class="action-icon"><i class="bi bi-building"></i></div>
             <div class="action-content">
                 <h4>Gestion des clubs</h4>
                 <p>Administrez les clubs et leurs responsables</p>
@@ -293,7 +294,7 @@ $recent_events = $stmt->fetchAll();
                 <div class="event-card">
                     <div class="event-card-inner">
                         <div class="event-image">
-                            <div class="event-icon">📅</div>
+                            <div class="event-icon"><i class="bi bi-calendar-event"></i></div>
                         </div>
                         <div class="event-content">
                             <div>

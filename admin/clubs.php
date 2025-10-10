@@ -197,6 +197,7 @@ $message = $_GET['message'] ?? '';
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
         .container-admin {
             max-width: 1400px;
@@ -264,21 +265,21 @@ $message = $_GET['message'] ?? '';
 </div>
 <div class="container-admin">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>🏫 Gestion des Clubs</h2>
+        <h2><i class="bi bi-building me-2"></i>Gestion des Clubs</h2>
         <div>
             <span class="badge bg-primary"><?= count($clubs) ?> clubs</span>
             <button type="button" class="btn btn-success ms-2" onclick="showAddForm()">
-                ➕ Ajouter un club
+                <i class="bi bi-plus-circle me-1"></i>Ajouter un club
             </button>
         </div>
     </div>
 
     <?php if ($message): ?>
-        <div class="alert alert-success">✅ <?= htmlspecialchars($message) ?></div>
+        <div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($message) ?></div>
     <?php endif; ?>
     
     <?php if (isset($error)): ?>
-        <div class="alert alert-danger">❌ <?= htmlspecialchars($error) ?></div>
+        <div class="alert alert-danger"><i class="bi bi-x-circle-fill me-2"></i><?= htmlspecialchars($error) ?></div>
         
         <!-- Debug info (à retirer en production) -->
         <div class="debug-info">
@@ -293,7 +294,7 @@ $message = $_GET['message'] ?? '';
     <!-- Formulaire d'ajout/modification -->
     <div class="form-container" id="clubForm" style="<?= ($form_action === 'ajouter' || $form_action === 'modifier') ? '' : 'display: none;' ?>">
         <h4>
-            <?= $form_action === 'ajouter' ? '➕ Ajouter un club' : '✏️ Modifier le club' ?>
+            <?= $form_action === 'ajouter' ? '<i class="bi bi-plus-circle me-1"></i>Ajouter un club' : '<i class="bi bi-pencil-square me-1"></i>Modifier le club' ?>
             <?php if ($form_action === 'modifier'): ?>
                 <small class="text-muted">(ID: <?= $editing_club_id ?>)</small>
             <?php endif; ?>
@@ -359,13 +360,13 @@ $message = $_GET['message'] ?? '';
             
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-success">
-                    <?= $form_action === 'ajouter' ? '➕ Ajouter' : '💾 Sauvegarder' ?>
+                    <?= $form_action === 'ajouter' ? '<i class="bi bi-plus-circle me-1"></i>Ajouter' : '<i class="bi bi-save me-1"></i>Sauvegarder' ?>
                 </button>
                 <button type="button" class="btn btn-secondary" onclick="hideForm()">Annuler</button>
                 
                 <?php if ($form_action === 'modifier'): ?>
                 <button type="button" class="btn btn-info" onclick="resetForm()">
-                    🔄 Réinitialiser
+                    <i class="bi bi-arrow-clockwise me-1"></i>Réinitialiser
                 </button>
                 <?php endif; ?>
             </div>
@@ -398,7 +399,7 @@ $message = $_GET['message'] ?? '';
                         
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge bg-info">
-                                📅 <?= $club['nb_evenements'] ?> événement(s)
+                                <i class="bi bi-calendar-event me-1"></i><?= $club['nb_evenements'] ?> événement(s)
                             </span>
                             <small class="text-muted">ID: <?= $club['id'] ?></small>
                         </div>
@@ -417,7 +418,7 @@ $message = $_GET['message'] ?? '';
                         <input type="hidden" name="club_id" value="<?= $club['id'] ?>">
                         <input type="hidden" name="action" value="editer">
                         <button type="submit" class="btn btn-warning btn-sm">
-                            ✏️ Modifier
+                            <i class="bi bi-pencil-square me-1"></i>Modifier
                         </button>
                     </form>
                     
@@ -426,7 +427,7 @@ $message = $_GET['message'] ?? '';
                         <input type="hidden" name="action" value="supprimer">
                         <button type="submit" class="btn btn-danger btn-sm" 
                                 onclick="return confirm('Êtes-vous sûr de vouloir supprimer le club <?= addslashes($club['clubNom']) ?> ?')">
-                            🗑️ Supprimer
+                            <i class="bi bi-trash3 me-1"></i>Supprimer
                         </button>
                     </form>
                 </div>
@@ -442,7 +443,7 @@ $message = $_GET['message'] ?? '';
                 <h4>Aucun club trouvé</h4>
                 <p>Commencez par ajouter votre premier club.</p>
                 <button type="button" class="btn btn-success" onclick="showAddForm()">
-                    ➕ Ajouter un club
+                    <i class="bi bi-plus-circle me-1"></i>Ajouter un club
                 </button>
             </div>
         </div>
@@ -455,7 +456,7 @@ function showAddForm() {
     // Réinitialiser le formulaire pour l'ajout
     document.querySelector('form').reset();
     document.querySelector('input[name="action"]').value = 'ajouter';
-    document.querySelector('h4').textContent = '➕ Ajouter un club';
+    document.querySelector('h4').innerHTML = '<i class="bi bi-plus-circle me-1"></i>Ajouter un club';
     
     // Supprimer le champ club_id s'il existe
     const clubIdField = document.querySelector('input[name="club_id"]');

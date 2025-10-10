@@ -58,6 +58,7 @@ $message = $_GET['message'] ?? '';
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         .events-container {
@@ -305,7 +306,7 @@ $message = $_GET['message'] ?? '';
                 <div class="event-card">
                     <div class="event-card-inner">
                         <div class="event-image">
-                            <div class="event-icon">📅</div>
+                            <div class="event-icon"><i class="bi bi-calendar-event"></i></div>
                         </div>
                         
                         <div class="event-content">
@@ -362,7 +363,7 @@ $message = $_GET['message'] ?? '';
                                     <input type="hidden" name="event_id" value="<?= $event['idEvent'] ?>">
                                     <input type="hidden" name="action" value="valider">
                                     <button type="submit" class="btn-validate" onclick="return confirm('Êtes-vous sûr de vouloir valider cet événement ?')">
-                                        ✅ Valider
+                                        <i class="bi bi-check-circle-fill me-1"></i>Valider
                                     </button>
                                 </form>
                                 
@@ -370,7 +371,7 @@ $message = $_GET['message'] ?? '';
                                     <input type="hidden" name="event_id" value="<?= $event['idEvent'] ?>">
                                     <input type="hidden" name="action" value="refuser">
                                     <button type="submit" class="btn-reject" onclick="return confirm('Êtes-vous sûr de vouloir refuser cet événement ?')">
-                                        ❌ Refuser
+                                        <i class="bi bi-x-circle-fill me-1"></i>Refuser
                                     </button>
                                 </form>
                             </div>

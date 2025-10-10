@@ -45,6 +45,7 @@ $message = $_GET['message'] ?? '';
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         .container-admin {
@@ -317,8 +318,6 @@ $message = $_GET['message'] ?? '';
                                     <?= htmlspecialchars($user['nom_utilisateur']) ?>
                                 <?php endif; ?>
                             </div>
-                            <div class="text-muted small">@<?= htmlspecialchars($user['nom_utilisateur']) ?></div>
-                            <div class="text-muted small"><?= htmlspecialchars($user['email']) ?></div>
                         </td>
                         <td>
                             <span class="role-badge badge-<?= $user['role'] ?>">
@@ -330,11 +329,7 @@ $message = $_GET['message'] ?? '';
                             <?php if ($user['role'] === 'etudiant'): ?>
                                 <div class="small">
                                     <i class="fas fa-graduation-cap me-1 text-muted"></i>
-                                    <?= htmlspecialchars($user['filiere'] ?? 'Non défini') ?>
-                                </div>
-                                <div class="small">
-                                    <i class="fas fa-calendar me-1 text-muted"></i>
-                                    <?= htmlspecialchars($user['annee'] ?? 'Non défini') ?>
+                                    <?= htmlspecialchars($user['annee']." année ".$user['filiere'] ?? 'Non défini') ?>
                                 </div>
                                 <?php if ($user['telephone']): ?>
                                 <div class="small">
@@ -342,11 +337,23 @@ $message = $_GET['message'] ?? '';
                                     <?= htmlspecialchars($user['telephone']) ?>
                                 </div>
                                 <?php endif; ?>
+                                <?php if ($user['email']): ?>
+                                <div class="small">
+                                    <i class="bi bi-envelope-at me-1 text-muted"></i>
+                                    <?= htmlspecialchars($user['email']) ?>
+                                </div>
+                                <?php endif; ?>
                             <?php elseif ($user['role'] === 'club'): ?>
                                 <div class="small">
                                     <i class="fas fa-tag me-1 text-muted"></i>
                                     <?= htmlspecialchars($user['nom_abr'] ?? 'Aucune abréviation') ?>
                                 </div>
+                                <?php if ($user['email']): ?>
+                                <div class="small">
+                                    <i class="bi bi-envelope-at me-1 text-muted"></i>
+                                    <?= htmlspecialchars($user['email']) ?>
+                                </div>
+                                <?php endif; ?>
                                 <?php if ($user['description']): ?>
                                 <div class="small text-truncate" title="<?= htmlspecialchars($user['description']) ?>">
                                     <i class="fas fa-info-circle me-1 text-muted"></i>
@@ -461,7 +468,7 @@ $message = $_GET['message'] ?? '';
                 <h4>Aucun utilisateur trouvé</h4>
                 <p class="mb-4">Commencez par ajouter votre premier utilisateur à la plateforme.</p>
                 <button type="button" class="btn btn-success btn-lg" onclick="showAddForm()">
-                    <i class="fas fa-plus-circle me-2"></i>Ajouter le premier utilisateur
+                    <i class="bi bi-plus-circle me-2"></i>Ajouter le premier utilisateur
                 </button>
             </div>
         </div>

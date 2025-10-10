@@ -57,6 +57,7 @@ $message = $_GET['message'] ?? '';
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
         .container-admin {
             max-width: 1200px;
@@ -89,7 +90,7 @@ $message = $_GET['message'] ?? '';
 </div>
 <div class="container-admin">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>📋 Tous les Événements</h2>
+        <h2><i class="bi bi-clipboard-check me-2"></i>Tous les Événements</h2>
         <span class="badge bg-primary"><?= count($events) ?> événements</span>
     </div>
 
@@ -148,7 +149,7 @@ $message = $_GET['message'] ?? '';
                             <input type="hidden" name="action" value="supprimer">
                             <button type="submit" class="btn btn-danger btn-sm" 
                                     onclick="return confirm('Supprimer cet événement ?')">
-                                🗑️
+                                <i class="bi bi-trash3"></i>
                             </button>
                         </form>
                     </td>
