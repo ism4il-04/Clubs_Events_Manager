@@ -41,9 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
         body { background: #f5f7ff; color: #333; }
 
         /* Header */
-        .header { display: flex; justify-content: space-between; align-items: center; background: #1f3c88; color: #fff; padding: 20px 40px; border-radius: 0 0 15px 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .header { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);; color: #fff; padding: 20px 40px; border-radius: 0 0 15px 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .header-left { display: flex; align-items: center; gap: 15px; }
-        .logo { width: 50px; height: 50px; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #1f3c88; }
+        .logo { width: 50px; height: 50px;  display: flex; align-items: center; justify-content: center; font-size: 24px; color: #1f3c88; }
         .header-info h2 { font-size: 1.6rem; font-weight: 600; margin-bottom: 3px; }
         .header-info p { font-size: 0.85rem; color: #c5d9f5; font-weight: 400; }
         .header-right { display: flex; align-items: center; gap: 20px; }
@@ -58,29 +58,180 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
         .nav button:hover { background: #f0f3ff; color: #1f3c88; }
 
         /* Cards */
-        .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding: 25px 50px; }
-        .card { background: #fff; border-radius: 15px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.06); transition: transform 0.25s, box-shadow 0.25s; display: flex; flex-direction: column; justify-content: space-between; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 15px 25px rgba(0,0,0,0.1); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .card-header h3 { font-size: 1.3rem; color: #1f3c88; }
-        .status.green { color: #28a745; font-weight: bold; }
-        .status.orange { color: #fd7e14; font-weight: bold; }
-        .status.gray { color: #6c757d; font-weight: bold; }
-        .card p { margin: 6px 0; line-height: 1.4; }
-        .infos p { font-size: 0.9rem; color: #555; }
-        .infos i { margin-right: 5px; color: #1f3c88; }
-        .footer { display: flex; justify-content: flex-end; margin-top: 15px; }
-        .participate-btn, .requested { padding: 8px 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: 0.3s; }
-        .participate-btn { background: #1f3c88; color: #fff; }
-        .participate-btn:hover { background: #15306b; }
-        .requested { background: #6c757d; color: #fff; cursor: not-allowed; }
+        /* === Cards Modernized === */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            padding: 40px 60px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #eef1f7;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea, #1f3c88);
+            padding: 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+        }
+
+        .card-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+            max-width: 80%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .status.green {
+            background: rgba(40, 167, 69, 0.2);
+            color: #fff;
+            border: 1px solid #28a745;
+        }
+
+        .status.orange {
+            background: rgba(253, 126, 20, 0.2);
+            color: #fff;
+            border: 1px solid #fd7e14;
+        }
+
+        .status.gray {
+            background: rgba(108, 117, 125, 0.2);
+            color: #fff;
+            border: 1px solid #6c757d;
+        }
+
+        .card-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-content p {
+            margin: 6px 0;
+            font-size: 0.92rem;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .card-content .category {
+            display: inline-block;
+            background: #eef1f7;
+            color: #1f3c88;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .infos {
+            margin-top: 15px;
+            display: grid;
+            gap: 6px;
+            font-size: 0.88rem;
+        }
+
+        .infos p {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #555;
+        }
+
+        .infos i {
+            color: #1f3c88;
+            font-size: 1rem;
+        }
+
+        .footer {
+            padding: 15px 20px 20px;
+            display: flex;
+            justify-content: flex-end;
+            border-top: 1px solid #f0f0f0;
+            background: #fafbff;
+        }
+
+        .footer-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            justify-content: flex-end;
+        }
+
+        .participation-status {
+            background: #adb5bd;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .participate-btn, .requested {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .participate-btn {
+            background: linear-gradient(135deg, #667eea, #1f3c88);
+            color: #fff;
+        }
+
+        .participate-btn:hover {
+            background: linear-gradient(135deg, #5a6edb, #182f72);
+            transform: translateY(-2px);
+        }
+
+        .requested {
+            background: #adb5bd;
+            color: #fff;
+            cursor: not-allowed;
+        }
+
 
         /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); animation: fadeIn 0.3s; }
         @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
         .modal-content { background: #fff; margin: 3% auto; padding: 0; border-radius: 15px; width: 90%; max-width: 600px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s; max-height: 90vh; overflow-y: auto; }
         @keyframes slideDown { from {transform: translateY(-50px); opacity:0;} to {transform: translateY(0); opacity:1;} }
-        .modal-header { background: #1f3c88; color: #fff; padding: 20px 25px; border-radius: 15px 15px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 20px 25px; border-radius: 15px 15px 0 0; display: flex; justify-content: space-between; align-items: center; }
         .modal-header h2 { font-size: 1.5rem; margin: 0; }
         .close { color: #fff; font-size: 28px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .close:hover { color: #ffd700; }
@@ -109,13 +260,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
 
         /* Responsive */
         @media (max-width: 768px) { .cards { padding: 20px 15px; grid-template-columns: 1fr; } .modal-content { width: 95%; margin: 10% auto; } .modal-info-row { grid-template-columns: 1fr; } }
+   .img{
+       width: 80px;
+   }
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 20px 60px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-top: 10px;
+            border-radius: 12px;
+        }
+
+        .filter-bar input,
+        .filter-bar select {
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-bar input:focus,
+        .filter-bar select:focus {
+            border-color: #1f3c88;
+        }
+
     </style>
 </head>
 <body>
 
 <header class="header">
     <div class="header-left">
-        <div class="logo"><i class="fas fa-graduation-cap"></i></div>
+        <div class="logo"><img class="img" src="../Circle_BLACK_Logo-removebg-preview.png" alt="logo"></div>
         <div class="header-info">
             <h2>Portail Étudiant</h2>
             <p>ENSA Tétouan - École Nationale des Sciences Appliquées</p>
@@ -130,9 +313,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
 <nav class="nav">
     <a href="dashboard.php"><button class="active">Tous les événements</button></a>
     <a href="mes_inscriptions.php"><button>Mes inscriptions</button></a>
-    <a href="#"><button>Mes certificats</button></a>
+    <a href="mes_certificats.php"><button>Mes certificats</button></a>
     <a href="profile.php"><button>Mon profil</button></a>
 </nav>
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="Rechercher un événement...">
+    <select id="statusFilter">
+        <option value="">Tous les statuts</option>
+        <option value="en cours de traitement">En cours</option>
+        <option value="terminé">Terminé</option>
+        <option value="ouvert">Ouvert</option>
+    </select>
+    <select id="categoryFilter">
+        <option value="">Toutes les catégories</option>
+        <?php
+        $categories = array_unique(array_map(fn($e) => $e['categorie'], $events));
+        foreach ($categories as $cat): ?>
+            <option value="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></option>
+        <?php endforeach; ?>
+    </select>
+</div>
 
 <div class="cards">
     <?php foreach ($events as $event): ?>
@@ -148,21 +349,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
                     <span class="status green"><?= htmlspecialchars($event['status']) ?></span>
                 <?php endif; ?>
             </div>
-            <p><strong>Catégorie:</strong> <?= htmlspecialchars($event['categorie']) ?></p>
-            <p><?= htmlspecialchars($event['descriptionEvenement']) ?></p>
-            <div class="infos">
-                <p><i class="fa-regular fa-calendar"></i><?= htmlspecialchars($event['dateDepart']) ?> <strong><?= htmlspecialchars($event['heureDepart']) ?></strong> → <?= htmlspecialchars($event['dateFin']) ?> <strong><?= htmlspecialchars($event['heureFin']) ?></strong></p>
-                <p><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($event['lieu']) ?></p>
-                <p><i class="fa-solid fa-users"></i> <?= htmlspecialchars($event['places']) ?> places</p>
+
+            <div class="card-content">
+                <span class="category"><?= htmlspecialchars($event['categorie']) ?></span>
+                <p><?= htmlspecialchars($event['descriptionEvenement']) ?></p>
+
+                <div class="infos">
+                    <p><i class="fa-regular fa-calendar"></i> <?= htmlspecialchars($event['dateDepart']) ?>
+                        <strong><?= htmlspecialchars($event['heureDepart']) ?></strong> → <?= htmlspecialchars($event['dateFin']) ?>
+                        <strong><?= htmlspecialchars($event['heureFin']) ?></strong>
+                    </p>
+                    <p><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($event['lieu']) ?></p>
+                    <p><i class="fa-solid fa-users"></i> <?= htmlspecialchars($event['places']) ?> places</p>
+                </div>
             </div>
+
             <div class="footer">
-                <?php if ($alreadyRequested): ?>
-                    <button class="requested" disabled>Participation demandée</button>
-                <?php else: ?>
-                    <button type="button" class="participate-btn" onclick="openModal(<?= htmlspecialchars(json_encode($event)) ?>)">Voir détails</button>
-                <?php endif; ?>
+                <div class="footer-content">
+                    <?php if ($alreadyRequested): ?>
+                        <span class="participation-status">Participation demandée</span>
+                    <?php endif; ?>
+                    <button type="button" class="participate-btn" onclick="openModal(<?= htmlspecialchars(json_encode($event)) ?>, <?= $alreadyRequested ? 'true' : 'false' ?>)">Voir détails</button>
+                </div>
             </div>
         </div>
+
     <?php endforeach; ?>
 </div>
 
@@ -195,7 +406,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
                     <div class="modal-info-item"><strong>Email</strong><p><?= htmlspecialchars($participant['email']) ?></p></div>
                     <div class="modal-info-item"><strong>Filière</strong><p><?= htmlspecialchars($participant['filiere'] ?? '-') ?></p></div>
                 </div>
-                <div class="modal-section">
+                <div class="modal-section participation-form" style="display: none;">
                     <h3>S'inscrire à cet événement</h3>
                     <div class="form-group">
                         <label>Commentaire (optionnel)</label>
@@ -210,8 +421,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
                 <input type="hidden" name="submit_participation" value="1">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Annuler</button>
-                <button type="submit" name="participer" class="btn-submit" id="submitBtn" disabled>Demander participation</button>
+                <button type="button" class="btn-cancel" onclick="closeModal()">Fermer</button>
+                <button type="submit" name="participer" class="btn-submit" id="submitBtn" style="display: none;">Demander participation</button>
             </div>
         </form>
     </div>
@@ -226,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
         submitBtn.disabled = !this.checked;
     });
 
-    function openModal(event) {
+    function openModal(event, alreadyRequested) {
         document.getElementById('modalTitle').textContent = event.nomEvent;
         document.getElementById('modalClub').textContent = event.categorie;
         document.getElementById('modalDescription').textContent = event.descriptionEvenement;
@@ -234,6 +445,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
         document.getElementById('modalLieu').textContent = event.lieu;
         document.getElementById('modalPlaces').textContent = event.places;
         document.getElementById('modalEventId').value = event.idEvent;
+
+        // Handle participation form visibility
+        const participationForm = document.querySelector('.participation-form');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (alreadyRequested) {
+            participationForm.style.display = 'none';
+            submitBtn.style.display = 'none';
+        } else {
+            participationForm.style.display = 'block';
+            submitBtn.style.display = 'inline-block';
+        }
 
         document.getElementById('participationForm').reset();
         submitBtn.disabled = true;
@@ -253,6 +476,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id']) && isset(
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape' && modal.style.display === 'block') { closeModal(); }
     });
+
+    // Filtering logic
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const cardsContainer = document.querySelector('.cards');
+    const cards = Array.from(cardsContainer.children);
+
+    function filterEvents() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedStatus = statusFilter.value.toLowerCase();
+        const selectedCategory = categoryFilter.value.toLowerCase();
+
+        cards.forEach(card => {
+            const title = card.querySelector('.card-header h3').textContent.toLowerCase();
+            const statusEl = card.querySelector('.status');
+            const status = statusEl ? statusEl.textContent.toLowerCase() : '';
+            const categoryText = card.querySelector('p strong')?.nextSibling?.textContent?.trim().toLowerCase() || '';
+
+            const matchesSearch = title.includes(searchTerm);
+            const matchesStatus = !selectedStatus || status.includes(selectedStatus);
+            const matchesCategory = !selectedCategory || categoryText.includes(selectedCategory);
+
+            if (matchesSearch && matchesStatus && matchesCategory) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    searchInput.addEventListener('input', filterEvents);
+    statusFilter.addEventListener('change', filterEvents);
+    categoryFilter.addEventListener('change', filterEvents);
+
 </script>
 </body>
 </html>
