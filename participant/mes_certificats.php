@@ -1,27 +1,17 @@
 <?php
 session_start();
-require_once '../includes/db.php';
-
-if (!isset($_SESSION['id'])) {
-    header('Location: login.php');
-    exit;
+if(!isset($_SESSION["email"])){
+    header("../login.php");
 }
-
+include "../includes/db.php";
 $participant_id = $_SESSION['id'];
 $stmt = $conn->prepare("SELECT * FROM etudiants WHERE id = ?");
 $stmt->execute([$participant_id]);
 $participant = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$query = "
-    SELECT e.idEvent, e.nomEvent, e.categorie, e.dateDepart, e.dateFin, e.heureDepart, e.heureFin, e.lieu, e.places, p.etat
-    FROM participation p
-    JOIN evenements e ON p.evenement_id = e.idEvent
-    WHERE p.etudiant_id = ?
-    ORDER BY e.dateDepart DESC
-";
-$stmt = $conn->prepare($query);
-$stmt->execute([$participant_id]);
-$selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$attestation = $conn->prepare("SELECT * FROM participation NATURAL JOIN evenements WHERE etudiant_id = ? AND attestation IS NOT NULL");
+$attestation->execute(array($_SESSION["id"]));
+$attestation = $attestation->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -392,10 +382,10 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <button>Tous les événements</button>
     </a>
     <a href="mes_inscriptions.php">
-        <button class="active">Mes inscriptions</button>
+        <button>Mes inscriptions</button>
     </a>
     <a href="mes_certificats.php">
-        <button>Mes certificats</button>
+        <button class="active">Mes certificats</button>
     </a>
     <a href="profile.php">
         <button>Mon profil</button>
@@ -404,41 +394,40 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <div class="container">
     <div class="page-header">
-        <h1>Mes inscriptions</h1>
-        <p>Événements auxquels vous êtes inscrit</p>
+        <h1>Mes certificats</h1>
+        <p>Vos certificats</p>
     </div>
-
-    <?php if (count($selectedEvents) > 0): ?>
+    <?php if (count($attestation) > 0): ?>
         <div class="events-list">
-            <?php foreach ($selectedEvents as $event): ?>
+            <?php foreach ($attestation as $att): ?>
                 <div class="event-card">
                     <div class="event-card-header">
                         <div class="event-title-section">
-                            <h3><?= htmlspecialchars($event['nomEvent']) ?></h3>
-                            <p class="event-club"><?= htmlspecialchars($event['categorie']) ?></p>
+                            <h3><?= htmlspecialchars($att['nomEvent']) ?></h3>
+                            <p class="event-club"><?= htmlspecialchars($att['categorie']) ?></p>
                         </div>
-                        <span class="status-badge <?= strtolower(str_replace(' ', '-', $event['etat'])) ?>">
-                            <?= htmlspecialchars($event['etat']) ?>
+                        <span class="status-badge">
+                          <a href="<?= htmlspecialchars($att['attestation']) ?> download"><i class="fa-solid fa-download"></i>Telecharger</a>
                         </span>
                     </div>
 
-                    <div class="event-details">
-                        <div class="event-detail-item">
-                            <i class="fa-regular fa-calendar"></i>
-                            <span>
-                                <?= date('Y-m-d', strtotime($event['dateDepart'])) ?> au
-                                <?= date('Y-m-d', strtotime($event['dateFin'])) ?> •
-                                <strong><?= htmlspecialchars($event['heureDepart']) ?> - <?= htmlspecialchars($event['heureFin']) ?></strong>
-                            </span>
-                        </div>
-                        <div class="event-detail-item">
-                            <i class="fa-solid fa-location-dot"></i>
-                            <span><?= htmlspecialchars($event['lieu']) ?></span>
-                        </div>
-                        <div class="event-detail-item">
-                            <i class="fa-solid fa-users"></i>
-                            <span><?= htmlspecialchars($event['places']) ?></span>
-                        </div>
+<!--                    <div class="event-details">-->
+<!--                        <div class="event-detail-item">-->
+<!--                            <i class="fa-regular fa-calendar"></i>-->
+<!--                            <span>-->
+<!--                                --><?php //= date('Y-m-d', strtotime($att['dateDepart'])) ?><!-- au-->
+<!--                                --><?php //= date('Y-m-d', strtotime($att['dateFin'])) ?><!-- •-->
+<!--                                <strong>--><?php //= htmlspecialchars($att['heureDepart']) ?><!-- - --><?php //= htmlspecialchars($att['heureFin']) ?><!--</strong>-->
+<!--                            </span>-->
+<!--                        </div>-->
+<!--                        <div class="event-detail-item">-->
+<!--                            <i class="fa-solid fa-location-dot"></i>-->
+<!--                            <span>--><?php //= htmlspecialchars($att['lieu']) ?><!--</span>-->
+<!--                        </div>-->
+<!--                        <div class="event-detail-item">-->
+<!--                            <i class="fa-solid fa-users"></i>-->
+<!--                            <span>--><?php //= htmlspecialchars($att['places']) ?><!--</span>-->
+<!--                        </div>-->
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -446,8 +435,8 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <?php else: ?>
         <div class="empty-state">
             <i class="fa-regular fa-calendar-xmark"></i>
-            <h3>Aucune inscription</h3>
-            <p>Vous n'êtes inscrit à aucun événement pour le moment.</p>
+            <h3>Aucun certificat</h3>
+            <p>Vous n'avez aucun certificat pour le moment.</p>
             <a href="dashboard.php">
                 <i class="fa-solid fa-magnifying-glass"></i> Découvrir les événements
             </a>

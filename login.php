@@ -32,30 +32,55 @@ if (isset($_POST['participer'])) {
 if (isset($_POST['login'])) {
     $email = $_POST['email'];
     $password = $_POST['password'];
+    $recaptcha = $_POST['g-recaptcha-response'];
+    $secret_key = '6LeUYuUrAAAAAJV1hLybPKuNUm9kAv0f7gnx6gLh';
 
-    $select = $conn->prepare("SELECT * FROM utilisateurs WHERE email = ? AND password = ?");
-    $select->execute([$email, $password]);
-    $data = $select->fetch();
+    // Hitting request to the URL, Google will
+    // respond with success or error scenario
+    $url = 'https://www.google.com/recaptcha/api/siteverify?secret='
+        . $secret_key . '&response=' . $recaptcha;
 
-    if ($data) {
-        $_SESSION['id'] = $data['id'];
-        $_SESSION['email'] = $data['email'];
-        $_SESSION['password'] = $data['password'];
-        $_SESSION['nom_utilisateur'] = $data['nom_utilisateur'];
+    // Making request to verify captcha
+    $response = file_get_contents($url);
 
-        if ($_SESSION['email'] == 'admin@gmail.com') {
-            header("Location: ./admin/dashboard.php");
-            exit;
-        } elseif ($_SESSION['email'] == 'infotech@gmail.com') {
-            header("Location: ./club/dashboard.php");
-            exit;
+    // Response return by google is in
+    // JSON format, so we have to parse
+    // that json
+    $response = json_decode($response);
+
+    // Checking, if response is true or not
+    if ($response->success == true) {
+        echo '<script>alert("Google reCAPTACHA verified")</script>';
+
+        $select = $conn->prepare("SELECT * FROM utilisateurs WHERE email = ? AND password = ?");
+        $select->execute([$email, $password]);
+        $data = $select->fetch();
+
+        if ($data) {
+            $_SESSION['id'] = $data['id'];
+            $_SESSION['email'] = $data['email'];
+            $_SESSION['password'] = $data['password'];
+            $_SESSION['nom_utilisateur'] = $data['nom_utilisateur'];
+
+            if ($_SESSION['email'] == 'admin@gmail.com') {
+                header("Location: ./admin/dashboard.php");
+                exit;
+            } elseif ($_SESSION['email'] == 'infotech@gmail.com') {
+                header("Location: ./club/dashboard.php");
+                exit;
+            } else {
+                header("Location: ./participant/dashboard.php");
+                exit;
+            }
         } else {
-            header("Location: ./participant/dashboard.php");
-            exit;
+            echo "<script>alert('Email ou mot de passe incorrect.');</script>";
         }
     } else {
-        echo "<script>alert('Email ou mot de passe incorrect.');</script>";
+        echo '<script>alert("Error in Google reCAPTACHA")</script>';
     }
+
+
+
 }
 ?>
 <!DOCTYPE html>
@@ -67,6 +92,8 @@ if (isset($_POST['login'])) {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" sizes="16x16" href="pigeon2-removebg-preview.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://www.google.com/recaptcha/api.js" async defer>
+    </script>
     <style>
         * {
             box-sizing: border-box;
@@ -135,6 +162,7 @@ if (isset($_POST['login'])) {
             border-radius: 6px;
             font-size: 16px;
             cursor: pointer;
+            margin-top: 10px;
         }
         .btnn:hover {
             background: #357ab8;
@@ -168,6 +196,9 @@ if (isset($_POST['login'])) {
             width: 300px;
             align-items: center;
         }
+        /*.g-recaptcha {*/
+        /*    margin-left: 513px;*/
+        /*}*/
     </style>
 </head>
 <body>
@@ -184,6 +215,9 @@ if (isset($_POST['login'])) {
         <label for="password">Mot de passe</label>
         <input type="password" name="password" id="password" placeholder="Entrez votre mot de passe" required>
 
+        <div class="g-recaptcha"
+             data-sitekey="6LeUYuUrAAAAAOYH0f6FjmtZVnHA1CO8mO8bCLu4">
+        </div>
         <button class="btnn" type="submit" name="login">Se connecter</button>
     </form>
 
