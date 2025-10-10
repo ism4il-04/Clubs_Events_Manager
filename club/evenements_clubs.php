@@ -24,6 +24,7 @@ include "../includes/header.php";
     <link rel="stylesheet" href="../includes/style.css">
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Optional JS for modals, dropdowns, etc. -->
@@ -76,7 +77,7 @@ include "../includes/header.php";
             <p>Gérez et suivez vos événements en temps réel</p>
             <div class="events-actions">
                 <a href="ajouter_evenement.php" class="btn btn-primary">
-                    ➕ Ajouter un événement
+                    <i class="bi bi-plus-circle me-1"></i>Ajouter un événement
                 </a>
             </div>
         </div>
@@ -87,7 +88,7 @@ include "../includes/header.php";
                 <div class="event-card-inner">
                     <!-- Event Image/Icon -->
                     <div class="event-image">
-                        <div class="event-icon">🎯</div>
+                        <div class="event-icon"><i class="bi bi-bullseye"></i></div>
                 </div>
 
                     <!-- Event Content -->

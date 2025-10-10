@@ -78,9 +78,7 @@ $recent_events = $stmt->fetchAll();
             padding: 24px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 16px;
+            display: block;
         }
         
         .stat-card-modern:hover {
@@ -89,14 +87,39 @@ $recent_events = $stmt->fetchAll();
         }
         
         .stat-icon {
-            font-size: 2.5rem;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .stat-icon i {
+            font-size: 1.4rem;
+            color: #667eea;
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .stat-title {
+            color: #718096;
+            font-size: 0.95rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin: 0;
         }
         
         .stat-content h3 {
@@ -133,15 +156,19 @@ $recent_events = $stmt->fetchAll();
         }
         
         .action-icon {
-            font-size: 2rem;
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 16px;
+        }
+
+        .action-icon i {
+            font-size: 1.3rem;
+            color: #667eea;
         }
         
         .action-content h4 {
@@ -229,32 +256,32 @@ $recent_events = $stmt->fetchAll();
     <!-- Statistics Cards -->
     <div class="stats-grid">
         <div class="stat-card-modern">
-            <div class="stat-icon"><i class="bi bi-bar-chart-fill"></i></div>
-            <div class="stat-content">
-                <h3><?php echo $stats['total_events']; ?></h3>
-                <p>Événements totaux</p>
+            <div class="stat-header">
+                <p class="stat-title">Événements totaux</p>
+                <div class="stat-icon"><i class="bi bi-bar-chart-fill"></i></div>
             </div>
+            <div class="stat-value"><?php echo $stats['total_events']; ?></div>
         </div>
         <div class="stat-card-modern">
-            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
-            <div class="stat-content">
-                <h3><?php echo $stats['pending_events']; ?></h3>
-                <p>En attente de validation</p>
+            <div class="stat-header">
+                <p class="stat-title">En attente de validation</p>
+                <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
             </div>
+            <div class="stat-value"><?php echo $stats['pending_events']; ?></div>
         </div>
         <div class="stat-card-modern">
-            <div class="stat-icon"><i class="bi bi-building"></i></div>
-            <div class="stat-content">
-                <h3><?php echo $stats['total_clubs']; ?></h3>
-                <p>Clubs actifs</p>
+            <div class="stat-header">
+                <p class="stat-title">Clubs actifs</p>
+                <div class="stat-icon"><i class="bi bi-building"></i></div>
             </div>
+            <div class="stat-value"><?php echo $stats['total_clubs']; ?></div>
         </div>
         <div class="stat-card-modern">
-            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
-            <div class="stat-content">
-                <h3><?php echo $stats['total_participants']; ?></h3>
-                <p>Participants inscrits</p>
+            <div class="stat-header">
+                <p class="stat-title">Participants inscrits</p>
+                <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
             </div>
+            <div class="stat-value"><?php echo $stats['total_participants']; ?></div>
         </div>
     </div>
     
