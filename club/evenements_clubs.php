@@ -70,7 +70,7 @@ include "../includes/header.php";
         <div class="tab" onclick="navigateTo('ajouter_evenement.php')">Ajouter un événement</div>
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
-        <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
+        <div class="tab" onclick="navigateTo('#')">Certificats</div>
     </div>
     
     <div class="events-container">
@@ -152,10 +152,10 @@ include "../includes/header.php";
                             </button>
                             
                             <?php if (in_array($status, ['en attente'])): ?>
-                                <a href="edit_event.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-edit">Modifier</a>
-                                <a href="cancel_event.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
+                                <a href="#?id=<?= $event['idEvent'] ?>" class="btn-action btn-edit">Modifier</a>
+                                <a href="#?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
                             <?php elseif (in_array($status, ['Disponible', 'Sold out'])): ?>
-                                <a href="cancel_event.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
+                                <a href="#?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
                             <?php else: ?>
                                 <button class="btn-action btn-secondary" disabled>Aucune action</button>
                             <?php endif; ?>

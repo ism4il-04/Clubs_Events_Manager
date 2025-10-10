@@ -26,6 +26,7 @@ $stats = [
 $stmt = $conn->prepare("SELECT nomEvent AS title, dateDepart AS date, lieu AS location, status FROM evenements WHERE organisateur_id = ? ORDER BY dateDepart DESC LIMIT 5");
 $stmt->execute([$organisateurId]);
 $recent_events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+include '../includes/header.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -44,37 +45,6 @@ $recent_events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </head>
 <body>
 
-<header>
-    <div class="header-container">
-        <div class="header-left">
-            <div class="logo-box">
-                <!-- School icon (example SVG) -->
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3L2 9l10 6 10-6-10-6z" />
-                </svg>
-            </div>
-            <div>
-                <h1>Portail Club</h1>
-                <p>Club Infotech</p>
-            </div>
-        </div>
-        <div class="header-right">
-            <div class="user-info">
-                <p>Bonjour, <?php echo htmlspecialchars($_SESSION['email']); ?></p>
-                <p>Club</p>
-            </div>
-            <form action="../logout.php" method="post">
-                <button type="submit" class="logout-button">
-                    <!-- Logout icon (example SVG) -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-10V5" />
-                    </svg>
-                    Déconnexion
-                </button>
-            </form>
-        </div>
-    </div>
-</header>
 
 <div>
     <div class="tabs">
@@ -83,7 +53,7 @@ $recent_events = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="tab">Ajouter un événement</div>
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
-        <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
+        <div class="tab" onclick="navigateTo('#')">Certificats</div>
     </div>
     
     <div class="events-container">
