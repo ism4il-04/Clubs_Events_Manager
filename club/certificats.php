@@ -230,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
         
         .modal-header {
-            padding: 1.5rem;
+            padding: 1rem 1.5rem;
             border-bottom: 1px solid #e9ecef;
             display: flex;
             justify-content: space-between;
@@ -240,10 +240,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         .modal-header h3 {
             margin: 0;
             color: #2c3e50;
+            font-size: 1.25rem;
         }
         
         .close {
-            font-size: 2rem;
+            font-size: 1.75rem;
             font-weight: bold;
             color: #6c757d;
             cursor: pointer;
@@ -255,33 +256,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
         
         .modal-body {
-            padding: 1.5rem;
+            padding: 1rem;
             overflow-y: auto;
             flex: 1;
+            max-height: 400px;
         }
         
         .modal-footer {
-            padding: 1rem 1.5rem;
+            padding: 0.75rem 1rem;
             border-top: 1px solid #e9ecef;
             display: flex;
-            gap: 1rem;
+            gap: 0.75rem;
             justify-content: space-between;
         }
         
         .participant-item {
-            padding: 0.75rem;
+            padding: 0.5rem;
             border: 1px solid #e9ecef;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            margin-bottom: 0.4rem;
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
         }
         
         .participant-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
+            flex-shrink: 0;
         }
         
         .participant-item input[type="checkbox"]:disabled {
@@ -295,23 +298,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         .participant-name {
             flex: 1;
             font-weight: 500;
+            font-size: 0.9rem;
         }
         
         .certified-badge {
             background: #28a745;
             color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.875rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            white-space: nowrap;
         }
         
         .btn-select-all, .btn-unselect-all {
             background: #6c757d;
             color: white;
             border: none;
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 0.8rem;
             border-radius: 6px;
             cursor: pointer;
+            font-size: 0.875rem;
         }
         
         .btn-select-all:hover, .btn-unselect-all:hover {
@@ -322,10 +328,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             background: linear-gradient(135deg, #28a745, #20c997);
             color: white;
             border: none;
-            padding: 0.75rem 2rem;
+            padding: 0.5rem 1.5rem;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
+            font-size: 0.875rem;
         }
         
         .btn-submit:hover {
@@ -336,10 +343,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             background: #6c757d;
             color: white;
             border: none;
-            padding: 0.75rem 2rem;
+            padding: 0.5rem 1.5rem;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
+            font-size: 0.875rem;
         }
         
         .btn-close:hover {
@@ -435,7 +443,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         const participantsData = <?= json_encode(
             array_reduce($events, function($carry, $event) use ($conn) {
                 $stmt = $conn->prepare("
-                    SELECT p.*, e.nom, e.prenom, e.id as student_id, e.filiere, e.annee
+                    SELECT p.attestation, p.certified, e.nom, e.prenom, e.id as student_id, e.filiere, e.annee
                     FROM participation p
                     JOIN etudiants e ON p.etudiant_id = e.id
                     WHERE p.evenement_id = ? AND p.etat = 'Accepté'
@@ -464,15 +472,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             } else {
                 let html = '';
                 participants.forEach(participant => {
-                    const hasCertificate = participant.attestation !== null && participant.attestation !== '';
-                    const disabled = hasCertificate ? 'disabled checked' : '';
-                    const certifiedClass = hasCertificate ? 'certified' : '';
+                    const isCertified = participant.certified == 1;
+                    const disabled = isCertified ? 'disabled checked' : '';
+                    const certifiedClass = isCertified ? 'certified' : '';
                     
                     html += `
                         <div class="participant-item ${certifiedClass}">
                             <input type="checkbox" name="participants[]" value="${participant.student_id}" ${disabled}>
                             <span class="participant-name">${participant.prenom} ${participant.nom}</span>
-                            ${hasCertificate ? '<span class="certified-badge">Déjà certifié</span>' : ''}
+                            ${isCertified ? '<span class="certified-badge">Déjà certifié</span>' : ''}
                         </div>
                     `;
                 });
