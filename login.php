@@ -20,8 +20,9 @@ if (isset($_POST['participer'])) {
     $annee = $_POST['annee'];
     $filiere = $_POST['filiere'];
 
+    $hashed_password=password_hash($password, PASSWORD_DEFAULT);
     $user = $conn->prepare("INSERT INTO utilisateurs(email, password, nom_utilisateur) VALUES (?, ?, ?)");
-    $user->execute([$email, $password, $nom_utilisateur]);
+    $user->execute([$email, $hashed_password, $nom_utilisateur]);
 
     $participant = $conn->prepare("SELECT id FROM utilisateurs WHERE email = ? AND nom_utilisateur = ?");
     $participant->execute([$email, $nom_utilisateur]);
@@ -37,7 +38,7 @@ if (isset($_POST['participer'])) {
 // --- LOGIN ---
 if (isset($_POST['login'])) {
     $email = $_POST['email'];
-    $password = $_POST['password'];
+    $password = trim($_POST['password']);
     $recaptcha = $_POST['g-recaptcha-response'];
     $secret_key = $secretKey;
 
@@ -56,52 +57,50 @@ if (isset($_POST['login'])) {
 
     // Checking, if response is true or not
     if ($response->success == true) {
-        echo '<script>alert("Google reCAPTCHA verified")</script>';
+//        echo '<script>alert("Google reCAPTCHA verified")</script>';
 
-        $select = $conn->prepare("SELECT * FROM utilisateurs WHERE email = ? AND password = ?");
-        $select->execute([$email, $password]);
+        $select = $conn->prepare("SELECT * FROM utilisateurs WHERE email = ?");
+        $select->execute([$email]);
         $data = $select->fetch();
 
-        if ($data) {
-            $_SESSION['id'] = $data['id'];
-            $_SESSION['email'] = $data['email'];
-            $_SESSION['password'] = $data['password'];
-            $_SESSION['nom_utilisateur'] = $data['nom_utilisateur'];
 
-            $adminCheck = $conn->prepare("SELECT id FROM admin WHERE id = ?");
-            $adminCheck->execute([$_SESSION['id']]);
-            $isAdmin = $adminCheck->fetch();
+        if ($data && password_verify($password, $data['password'])) {
 
-            // Check if user is admin
-            if ($isAdmin) {
-                header("Location: ./admin/dashboard.php");
+                $_SESSION['id'] = $data['id'];
+                $_SESSION['email'] = $data['email'];
+                $_SESSION['nom_utilisateur'] = $data['nom_utilisateur'];
+
+                $adminCheck = $conn->prepare("SELECT id FROM admin WHERE id = ?");
+                $adminCheck->execute([$_SESSION['id']]);
+                $isAdmin = $adminCheck->fetch();
+
+                // Check if user is admin
+                if ($isAdmin) {
+                    header("Location: ./admin/dashboard.php");
+                    exit;
+                }
+
+                // Check if user is club
+                $clubCheck = $conn->prepare("SELECT id FROM organisateur WHERE id = ?");
+                $clubCheck->execute([$_SESSION['id']]);
+                $isClub = $clubCheck->fetch();
+
+                if ($isClub) {
+                    header("Location: ./club/dashboard.php");
+                    exit;
+                }
+
+                // Else, it's a participant
+                header("Location: ./participant/dashboard.php");
                 exit;
-            }
 
-            // Check if user is club
-            $clubCheck = $conn->prepare("SELECT id FROM organisateur WHERE id = ?");
-            $clubCheck->execute([$_SESSION['id']]);
-            $isClub = $clubCheck->fetch();
-
-            if ($isClub) {
-                header("Location: ./club/dashboard.php");
-                exit;
-            }
-
-            // Else, it's a participant
-            header("Location: ./participant/dashboard.php");
-            exit;
-
-        } else {
+        }else {
             echo "<script>alert('Email ou mot de passe incorrect.');</script>";
         }
 
     } else {
         echo '<script>alert("Error in Google reCAPTCHA")</script>';
     }
-
-
-
 }
 ?>
 <!DOCTYPE html>
