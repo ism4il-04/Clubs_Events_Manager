@@ -233,10 +233,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="tabs">
         <div class="tab" onclick="navigateTo('dashboard.php')">Tableau de bord</div>
         <div class="tab" onclick="navigateTo('evenements_clubs.php')">Mes événements</div>
-        <div class="tab active" onclick="navigateTo('ajouter_evenements.php')">Ajouter un événement</div>
+        <div class="tab active" onclick="navigateTo('ajouter_evenement.php')">Ajouter un événement</div>
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
-        <div class="tab" onclick="navigateTo('#')">Certificats</div>
+        <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
     </div>
 
     <div class="form-container">
