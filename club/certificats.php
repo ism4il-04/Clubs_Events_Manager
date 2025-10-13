@@ -32,7 +32,7 @@ function generateCertificate($conn, $participantId, $event, $logoClub, $logoEcol
     }
     
     // Get organizer name
-    $stmt = $conn->prepare("SELECT nom_utilisateur FROM utilisateurs WHERE id = ?");
+    $stmt = $conn->prepare("SELECT clubNom FROM organisateur WHERE id = ?");
     $stmt->execute([$event['organisateur_id']]);
     $organisateurName = $stmt->fetchColumn();
     
@@ -69,8 +69,8 @@ function generateCertificate($conn, $participantId, $event, $logoClub, $logoEcol
     
     $dompdf->loadHtml($html);
     
-    // Set paper size to 1920x1080 landscape
-    $dompdf->setPaper([0, 0, 1920, 1080], 'landscape');
+    // Set paper size to A4 landscape (297mm x 210mm)
+    $dompdf->setPaper('A4', 'landscape');
     
     // Render the PDF
     $dompdf->render();
