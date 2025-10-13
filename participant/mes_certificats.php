@@ -399,7 +399,7 @@ $attestation = $attestation->fetchAll();
                             <p class="event-club"><?= htmlspecialchars($att['categorie']) ?></p>
                         </div>
                         <span class="status-badge">
-                          <a href="<?= htmlspecialchars($att['attestation']) ?> download"><i class="fa-solid fa-download"></i>Telecharger</a>
+                          <a href="<?='../'.htmlspecialchars($att['attestation']) ?> download"><i class="fa-solid fa-download"></i>Telecharger</a>
                         </span>
                     </div>
 

@@ -67,165 +67,268 @@ $userInfo = [
         .nav button.active { color: #1f3c88; border-bottom-color: #1f3c88; background: #f0f3ff; }
         .nav button:hover { background: #f0f3ff; color: #1f3c88; }
 
-        /* Cards */
+        /* Cards Container */
         .cards {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 32px;
             padding: 40px 60px;
         }
 
+        /* Enhanced Card Styles */
         .card {
             background: #fff;
-            border-radius: 16px;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
             display: flex;
             flex-direction: column;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid #eef1f7;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             position: relative;
         }
 
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+
         .card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transform: translateY(-8px);
+            box-shadow: 0 16px 40px rgba(102, 126, 234, 0.15);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 220px;
+            overflow: hidden;
+            position: relative;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+            pointer-events: none;
+        }
+
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover .card-image img {
+            transform: scale(1.08);
         }
 
         .card-header {
-            background: linear-gradient(135deg, #667eea, #1f3c88);
-            padding: 18px 20px;
+            position: absolute;
+            top: 220px;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            padding: 0 24px;
+            z-index: 10;
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            color: #fff;
+            align-items: flex-start;
+            gap: 12px;
         }
 
         .card-header h3 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0;
-            max-width: 80%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            background: #fff;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #1f3c88;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            line-height: 1.4;
+            max-width: calc(100% - 100px);
         }
 
         .status {
-            padding: 4px 10px;
-            border-radius: 12px;
+            padding: 8px 16px;
+            border-radius: 20px;
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
         }
 
         .status.green {
-            background: rgba(40, 167, 69, 0.2);
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: #fff;
-            border: 1px solid #28a745;
         }
 
         .status.orange {
-            background: rgba(253, 126, 20, 0.2);
+            background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
             color: #fff;
-            border: 1px solid #fd7e14;
         }
 
         .status.gray {
-            background: rgba(108, 117, 125, 0.2);
+            background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%);
             color: #fff;
-            border: 1px solid #6c757d;
         }
 
         .card-content {
-            padding: 20px;
+            padding: 40px 24px 20px;
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .card-content p {
-            margin: 6px 0;
-            font-size: 0.92rem;
-            color: #444;
-            line-height: 1.5;
+            gap: 16px;
         }
 
         .card-content .category {
-            display: inline-block;
-            background: #eef1f7;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #eef1f7 0%, #e3e8f0 100%);
             color: #1f3c88;
             font-size: 0.8rem;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 12px;
-            margin-bottom: 8px;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 20px;
+            align-self: flex-start;
+            border: 1.5px solid #d5dce8;
+        }
+
+        .card-content .category::before {
+            content: '•';
+            font-size: 1.2rem;
+        }
+
+        .card-content > p {
+            color: #555;
+            font-size: 0.93rem;
+            line-height: 1.6;
+            margin: 0;
         }
 
         .infos {
-            margin-top: 15px;
-            display: grid;
-            gap: 6px;
-            font-size: 0.88rem;
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
         }
 
         .infos p {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             color: #555;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            margin: 0;
         }
 
         .infos i {
-            color: #1f3c88;
+            color: #667eea;
             font-size: 1rem;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .places-info {
+            font-weight: 600;
         }
 
         .footer {
-            padding: 15px 20px 20px;
-            display: flex;
-            justify-content: flex-end;
-            border-top: 1px solid #f0f0f0;
-            background: #fafbff;
+            padding: 20px 24px;
+            background: linear-gradient(180deg, transparent 0%, #fafbff 100%);
+            border-top: 1px solid #f0f3f8;
         }
 
         .footer-content {
             display: flex;
             align-items: center;
-            gap: 15px;
-            width: 100%;
-            justify-content: flex-end;
+            justify-content: space-between;
+            gap: 12px;
         }
 
         .participation-status {
-            background: #adb5bd;
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
             color: #fff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .participation-status::before {
+            content: '✓';
+            font-size: 1rem;
+            font-weight: bold;
         }
 
         .participate-btn, .requested {
-            padding: 10px 16px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 8px;
-            font-weight: 600;
+            border-radius: 12px;
+            font-weight: 700;
             cursor: pointer;
             font-size: 0.9rem;
-            transition: background 0.3s ease, transform 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
 
         .participate-btn {
-            background: linear-gradient(135deg, #667eea, #1f3c88);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .participate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .participate-btn:hover::before {
+            left: 100%;
         }
 
         .participate-btn:hover {
-            background: linear-gradient(135deg, #5a6edb, #182f72);
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .participate-btn:active {
+            transform: translateY(0);
         }
 
         .requested {
@@ -278,7 +381,19 @@ $userInfo = [
         }
 
         /* Responsive */
-        @media (max-width: 768px) { .cards { padding: 20px 15px; grid-template-columns: 1fr; } .modal-content { width: 95%; margin: 10% auto; } .modal-info-row { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+            .cards { padding: 20px 15px; grid-template-columns: 1fr; }
+            .modal-content { width: 95%; margin: 10% auto; }
+            .modal-info-row { grid-template-columns: 1fr; }
+            .card-header h3 {
+                font-size: 1rem;
+                padding: 10px 14px;
+            }
+            .status {
+                font-size: 0.7rem;
+                padding: 6px 12px;
+            }
+        }
         .img{ width: 80px; }
 
         /* Filter Bar */
@@ -384,25 +499,25 @@ $userInfo = [
 </div>
 
 <div class="cards">
-    <?php 
+    <?php
     $renderedIds = [];
-    foreach ($events as $event): 
+    foreach ($events as $event):
         // Check for duplicate rendering
         if (in_array($event['idEvent'], $renderedIds)) {
             continue; // Skip duplicates
         }
         $renderedIds[] = $event['idEvent'];
-        
+
         $alreadyRequested = in_array($event['idEvent'], $participations);
         $event['registeredCount'] = $registrationCounts[$event['idEvent']] ?? 0;
-    ?>
+        ?>
         <div class="card" data-category="<?= htmlspecialchars($event['categorie'] ?? 'Non spécifiée') ?>" data-event-id="<?= $event['idEvent'] ?>">
-            <?php if (!empty($event['image']) && file_exists($event['image'])): ?>
-                <div class="card-image" style="width: 100%; height: 200px; overflow: hidden; border-radius: 8px 8px 0 0;">
-                    <img src="<?= htmlspecialchars($event['image']) ?>" alt="<?= htmlspecialchars($event['nomEvent']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+            <?php if (!empty($event['image'])): ?>
+                <div class="card-image">
+                    <img src="../<?= htmlspecialchars($event['image']) ?>" alt="<?= htmlspecialchars($event['nomEvent']) ?>">
                 </div>
             <?php endif; ?>
-            
+
             <div class="card-header">
                 <h3><?= htmlspecialchars($event['nomEvent']) ?></h3>
                 <?php if ($event['status'] === 'Disponible'): ?>
@@ -685,7 +800,7 @@ $userInfo = [
         const statusFilter = document.getElementById('statusFilter');
         const categoryFilter = document.getElementById('categoryFilter');
         const cardsContainer = document.querySelector('.cards');
-        
+
         // Only select divs with class 'card'
         const cards = cardsContainer ? Array.from(cardsContainer.querySelectorAll('.card')) : [];
 
