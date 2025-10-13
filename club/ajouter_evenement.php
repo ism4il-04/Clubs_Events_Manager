@@ -12,8 +12,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $nomEvent = $_POST['nomEvent'];
         $descriptionEvenement = $_POST['descriptionEvenement'];
+        $categorie = $_POST['categorie'] ?? null;
         $lieu = $_POST['lieu'];
-        $places = (int)$_POST['places'];
+        $placesIllimitees = isset($_POST['placesIllimitees']);
+        $places = $placesIllimitees ? null : (int)$_POST['places'];
         $dateDepart = $_POST['dateDepart'];
         $heureDepart = $_POST['heureDepart'];
         $dateFin = $_POST['dateFin'];
@@ -21,9 +23,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Validate required fields
         if (empty($nomEvent) || empty($descriptionEvenement) || empty($lieu) || 
-            empty($places) || empty($dateDepart) || empty($heureDepart) || 
+            empty($dateDepart) || empty($heureDepart) || 
             empty($dateFin) || empty($heureFin)) {
             throw new Exception("Tous les champs sont obligatoires.");
+        }
+        
+        // Validate places if not unlimited
+        if (!$placesIllimitees && (empty($places) || $places < 1)) {
+            throw new Exception("Veuillez entrer un nombre de places valide ou cocher 'Places illimitées'.");
         }
         
         // Validate dates
@@ -34,9 +41,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("La date de fin doit être postérieure à la date de début.");
         }
         
+        // Handle image upload
+        $imagePath = null;
+        if (isset($_FILES['eventImage']) && $_FILES['eventImage']['error'] === UPLOAD_ERR_OK) {
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            $maxFileSize = 5 * 1024 * 1024; // 5MB
+            
+            $fileType = $_FILES['eventImage']['type'];
+            $fileSize = $_FILES['eventImage']['size'];
+            
+            if (!in_array($fileType, $allowedTypes)) {
+                throw new Exception("Type de fichier non autorisé. Utilisez JPG, PNG, GIF ou WEBP.");
+            }
+            
+            if ($fileSize > $maxFileSize) {
+                throw new Exception("Le fichier est trop volumineux. Taille maximale : 5MB.");
+            }
+            
+            $uploadDir = '../assets/uploads/events/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            
+            $fileExtension = pathinfo($_FILES['eventImage']['name'], PATHINFO_EXTENSION);
+            $fileName = uniqid('event_') . '.' . $fileExtension;
+            $targetPath = $uploadDir . $fileName;
+            
+            if (move_uploaded_file($_FILES['eventImage']['tmp_name'], $targetPath)) {
+                $imagePath = 'assets/uploads/events/' . $fileName;
+            } else {
+                throw new Exception("Erreur lors du téléchargement de l'image.");
+            }
+        }
+        
         // Insert event into database
-        $stmt = $conn->prepare("INSERT INTO evenements (nomEvent, descriptionEvenement, lieu, places, dateDepart, heureDepart, dateFin, heureFin, status, organisateur_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'En attente', ?)");
-        $stmt->execute([$nomEvent, $descriptionEvenement, $lieu, $places, $dateDepart, $heureDepart, $dateFin, $heureFin, $_SESSION['id']]);
+        $stmt = $conn->prepare("INSERT INTO evenements (nomEvent, descriptionEvenement, categorie, lieu, places, dateDepart, heureDepart, dateFin, heureFin, image, status, organisateur_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'En attente', ?)");
+        $stmt->execute([$nomEvent, $descriptionEvenement, $categorie, $lieu, $places, $dateDepart, $heureDepart, $dateFin, $heureFin, $imagePath, $_SESSION['id']]);
         
         $success_message = "Événement créé avec succès ! Il est en attente d'approbation.";
         
@@ -196,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="tab active" onclick="navigateTo('ajouter_evenements.php')">Ajouter un événement</div>
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
-        <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
+        <div class="tab" onclick="navigateTo('#')">Certificats</div>
     </div>
 
     <div class="form-container">
@@ -217,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="">
+        <form method="POST" action="" enctype="multipart/form-data">
             <div class="row">
                 <div class="col-md-12">
                     <div class="form-group">
@@ -241,6 +281,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="categorie" class="form-label">Catégorie *</label>
+                        <select class="form-control" id="categorie" name="categorie" required>
+                            <option value="">-- Sélectionnez une catégorie --</option>
+                            <option value="Conférence" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Conférence') ? 'selected' : '' ?>>Conférence</option>
+                            <option value="Atelier" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Atelier') ? 'selected' : '' ?>>Atelier</option>
+                            <option value="Formation" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Formation') ? 'selected' : '' ?>>Formation</option>
+                            <option value="Sortie Pédagogique" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Sortie Pédagogique') ? 'selected' : '' ?>>Sortie Pédagogique</option>
+                            <option value="Sportif" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Sportif') ? 'selected' : '' ?>>Sportif</option>
+                            <option value="Hackathon" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Hackathon') ? 'selected' : '' ?>>Hackathon</option>
+                            <option value="Séminaire" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Séminaire') ? 'selected' : '' ?>>Séminaire</option>
+                            <option value="Table ronde/ Débat" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Table ronde/ Débat') ? 'selected' : '' ?>>Table ronde/ Débat</option>
+                            <option value="Sortie" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Sortie') ? 'selected' : '' ?>>Sortie</option>
+                            <option value="Compétition" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Compétition') ? 'selected' : '' ?>>Compétition</option>
+                            <option value="Autre" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Autre') ? 'selected' : '' ?>>Autre</option>
+                        </select>
+                        <small class="form-text">Choisissez la catégorie qui correspond le mieux à votre événement</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="eventImage" class="form-label">Image de l'événement</label>
+                        <input type="file" class="form-control" id="eventImage" name="eventImage" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                        <small class="form-text">Format accepté : JPG, PNG, GIF, WEBP. Taille max : 5MB (Optionnel)</small>
+                        <div id="imagePreview" style="margin-top: 10px; display: none;">
+                            <img id="previewImg" src="" alt="Aperçu" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid #e9ecef;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
                 <div class="col-md-8">
                     <div class="form-group">
                         <label for="lieu" class="form-label">Lieu *</label>
@@ -251,10 +327,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label for="places" class="form-label">Nombre de places *</label>
+                        <label for="places" class="form-label">Nombre de places</label>
                         <input type="number" class="form-control" id="places" name="places" 
-                               value="<?= htmlspecialchars($_POST['places'] ?? '') ?>" min="1" required>
-                        <small class="form-text">Capacité maximale</small>
+                               value="<?= htmlspecialchars($_POST['places'] ?? '') ?>" min="1">
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="placesIllimitees" 
+                                   name="placesIllimitees" <?= isset($_POST['placesIllimitees']) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="placesIllimitees">
+                                Places illimitées / non contrôlées
+                            </label>
+                        </div>
+                        <small class="form-text">Capacité maximale ou cochez si illimité</small>
                     </div>
                 </div>
             </div>
@@ -304,11 +387,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const dateFin = document.getElementById('dateFin');
             const heureDepart = document.getElementById('heureDepart');
             const heureFin = document.getElementById('heureFin');
+            const placesInput = document.getElementById('places');
+            const placesIllimiteesCheckbox = document.getElementById('placesIllimitees');
+            const imageInput = document.getElementById('eventImage');
+            const imagePreview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+
+            // Image preview functionality
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validate file size
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Le fichier est trop volumineux. Taille maximale : 5MB');
+                        imageInput.value = '';
+                        imagePreview.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Validate file type
+                    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('Type de fichier non autorisé. Utilisez JPG, PNG, GIF ou WEBP.');
+                        imageInput.value = '';
+                        imagePreview.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Show preview
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        previewImg.src = event.target.result;
+                        imagePreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    imagePreview.style.display = 'none';
+                }
+            });
 
             // Set minimum date to today
             const today = new Date().toISOString().split('T')[0];
             dateDepart.min = today;
             dateFin.min = today;
+
+            // Handle unlimited places checkbox
+            function togglePlacesInput() {
+                if (placesIllimiteesCheckbox.checked) {
+                    placesInput.value = '';
+                    placesInput.disabled = true;
+                    placesInput.removeAttribute('required');
+                    placesInput.style.backgroundColor = '#e9ecef';
+                } else {
+                    placesInput.disabled = false;
+                    placesInput.setAttribute('required', 'required');
+                    placesInput.style.backgroundColor = '';
+                }
+            }
+
+            // Initialize places input state
+            togglePlacesInput();
+
+            // Add event listener to checkbox
+            placesIllimiteesCheckbox.addEventListener('change', togglePlacesInput);
 
             // Update dateFin minimum when dateDepart changes
             dateDepart.addEventListener('change', function() {
@@ -339,7 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Form submission validation
             form.addEventListener('submit', function(e) {
-                const requiredFields = ['nomEvent', 'descriptionEvenement', 'lieu', 'places', 'dateDepart', 'heureDepart', 'dateFin', 'heureFin'];
+                const requiredFields = ['nomEvent', 'descriptionEvenement', 'categorie', 'lieu', 'dateDepart', 'heureDepart', 'dateFin', 'heureFin'];
                 let isValid = true;
 
                 requiredFields.forEach(fieldName => {
@@ -351,6 +492,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         field.style.borderColor = '#e9ecef';
                     }
                 });
+
+                // Validate places if not unlimited
+                if (!placesIllimiteesCheckbox.checked) {
+                    if (!placesInput.value || placesInput.value < 1) {
+                        placesInput.style.borderColor = '#dc3545';
+                        isValid = false;
+                    } else {
+                        placesInput.style.borderColor = '#e9ecef';
+                    }
+                }
 
                 validateDateTime();
 

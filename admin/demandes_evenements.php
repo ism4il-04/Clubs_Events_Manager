@@ -238,35 +238,7 @@ $message = $_GET['message'] ?? '';
 </head>
 <body>
 
-<header>
-    <div class="header-container">
-        <div class="header-left">
-            <div class="logo-box">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3L2 9l10 6 10-6-10-6z" />
-                </svg>
-            </div>
-            <div>
-                <h1>Portail Administration</h1>
-                <p>ENSA Tétouan - École Nationale des Sciences Appliquées</p>
-            </div>
-        </div>
-        <div class="header-right">
-            <div class="user-info">
-                <p>Bonjour, <?php echo htmlspecialchars($_SESSION['email']); ?></p>
-                <p>Administrateur</p>
-            </div>
-            <form action="../logout.php" method="post">
-                <button type="submit" class="logout-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-10V5" />
-                    </svg>
-                    Déconnexion
-                </button>
-            </form>
-        </div>
-    </div>
-</header>
+<?php include 'admin_header.php'; ?>
 
 <div class="tabs">
     <div class="tab" onclick="navigateTo('dashboard.php')">Tableau de bord</div>
@@ -306,7 +278,11 @@ $message = $_GET['message'] ?? '';
                 <div class="event-card">
                     <div class="event-card-inner">
                         <div class="event-image">
-                            <div class="event-icon"><i class="bi bi-calendar-event"></i></div>
+                            <?php if (!empty($event['image']) && file_exists('../' . $event['image'])): ?>
+                                <img src="../<?= htmlspecialchars($event['image']) ?>" alt="<?= htmlspecialchars($event['nomEvent']) ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                            <?php else: ?>
+                                <div class="event-icon"><i class="bi bi-calendar-event"></i></div>
+                            <?php endif; ?>
                         </div>
                         
                         <div class="event-content">
@@ -329,7 +305,7 @@ $message = $_GET['message'] ?? '';
                                         <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
                                         </svg>
-                                        <?= htmlspecialchars($event['places']) ?> places
+                                        <?= $event['places'] ? htmlspecialchars($event['places']) . ' places' : 'Places illimitées' ?>
                                     </div>
                                     <div class="info-item">
                                         <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
