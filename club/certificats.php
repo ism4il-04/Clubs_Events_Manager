@@ -93,9 +93,9 @@ function generateCertificate($conn, $participantId, $event, $logoClub, $logoEcol
     file_put_contents($filePath, $pdf);
     
     // Update database with certificate path
-    $stmt = $conn->prepare("UPDATE participation SET attestation = ? WHERE evenement_id = ? AND etudiant_id = ?");
+    $stmt = $conn->prepare("UPDATE participation SET attestation = ?, certified = 1 WHERE evenement_id = ? AND etudiant_id = ?");
     $stmt->execute([$relativePath, $event['idEvent'], $participantId]);
-    echo "Certificate generated successfully";
+    
     
     return true;
 }
@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt = $conn->prepare("SELECT logo FROM organisateur WHERE id = ?;");
     $stmt->execute([$_SESSION['id']]);
     $logo = $stmt->fetch(PDO::FETCH_ASSOC);
-    $stmt = $conn->prepare("SELECT photo FROM admin;");
+    $stmt = $conn->prepare("SELECT photo FROM admin WHERE id = 1;");
     $stmt->execute();
     $logoEcole = $stmt->fetch(PDO::FETCH_ASSOC);
     $stmt = $conn->prepare("SELECT * FROM evenements WHERE idEvent = ? AND organisateur_id = ?;");
@@ -118,6 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     foreach ($selected_participants as $participant) {
         generateCertificate($conn, $participant, $event, $logo['logo'], $logoEcole['photo']);
     }
+
+    header("Location: certificats.php");
+    exit();
     // You can access the data here and do your processing
     // $event_id contains the event ID
     // $selected_participants is an array of student IDs
