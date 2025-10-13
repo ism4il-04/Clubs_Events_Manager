@@ -75,14 +75,14 @@
             color: #1e3a8a;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 8px;
+            letter-spacing: 2px;
             margin-bottom: 15px;
         }
         .certificate-subtitle {
             font-size: 36px;
             color: #3b82f6;
             font-style: italic;
-            letter-spacing: 3px;
+            letter-spacing: 1px;
         }
         
         /* Content section */

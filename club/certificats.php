@@ -21,15 +21,83 @@ $stmt = $conn->prepare("
 $stmt->execute([$_SESSION['id']]);
 $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-function generateCertificate($conn,$participant,$event,$logoClub,$logoEcole){
+function generateCertificate($conn, $participantId, $event, $logoClub, $logoEcole) {
+    // Fetch full participant data from database
+    $stmt = $conn->prepare("SELECT * FROM etudiants WHERE id = ?");
+    $stmt->execute([$participantId]);
+    $participantData = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$participantData) {
+        return false;
+    }
+    
+    // Get organizer name
+    $stmt = $conn->prepare("SELECT nom_utilisateur FROM utilisateurs WHERE id = ?");
+    $stmt->execute([$event['organisateur_id']]);
+    $organisateurName = $stmt->fetchColumn();
+    
+    // Convert logos to base64 for embedding in PDF
+    $logoEcoleBase64 = '';
+    if (!empty($logoEcole)) {
+        $logoPath = file_exists('../' . $logoEcole) ? '../' . $logoEcole : $logoEcole;
+        if (file_exists($logoPath)) {
+            $imageData = file_get_contents($logoPath);
+            $base64 = base64_encode($imageData);
+            $ext = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $logoEcoleBase64 = 'data:image/' . $ext . ';base64,' . $base64;
+        }
+    }
+    
+    $logoClubBase64 = '';
+    if (!empty($logoClub)) {
+        $logoPath = file_exists('../' . $logoClub) ? '../' . $logoClub : $logoClub;
+        if (file_exists($logoPath)) {
+            $imageData = file_get_contents($logoPath);
+            $base64 = base64_encode($imageData);
+            $ext = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $logoClubBase64 = 'data:image/' . $ext . ';base64,' . $base64;
+        }
+    }
+    
+    // Instantiate dompdf
     $dompdf = new Dompdf();
-
+    
     // Capture the template output
     ob_start();
     include "certificat_themplate.php"; 
     $html = ob_get_clean();
+    
     $dompdf->loadHtml($html);
-
+    
+    // Set paper size to 1920x1080 landscape
+    $dompdf->setPaper([0, 0, 1920, 1080], 'landscape');
+    
+    // Render the PDF
+    $dompdf->render();
+    
+    // Get PDF output
+    $pdf = $dompdf->output();
+    
+    // Create directory if doesn't exist
+    $uploadDir = '../assets/uploads/certificates/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+    
+    // Generate filename
+    $fileName = 'certificate_' . $event['idEvent'] . '_' . $participantId . '_' . time() . '.pdf';
+    $filePath = $uploadDir . $fileName;
+    $relativePath = 'assets/uploads/certificates/' . $fileName;
+    
+    // Save PDF to file
+    file_put_contents($filePath, $pdf);
+    
+    // Update database with certificate path
+    $stmt = $conn->prepare("UPDATE participation SET attestation = ? WHERE evenement_id = ? AND etudiant_id = ?");
+    $stmt->execute([$relativePath, $event['idEvent'], $participantId]);
+    echo "Certificate generated successfully";
+    
+    return true;
 }
 
 // Handle form submission for certificate generation
@@ -48,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $event = $stmt->fetch(PDO::FETCH_ASSOC);
 
     foreach ($selected_participants as $participant) {
-        generateCertificate($conn, $participant, $$event, $logo['logo'], $logoEcole['photo']);
+        generateCertificate($conn, $participant, $event, $logo['logo'], $logoEcole['photo']);
     }
     // You can access the data here and do your processing
     // $event_id contains the event ID

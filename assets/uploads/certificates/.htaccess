@@ -1,18 +1,8 @@
-# Allow PDF files to be served
-<IfModule mod_rewrite.c>
-    RewriteEngine Off
-</IfModule>
-
-# Set proper MIME types
-<IfModule mod_mime.c>
-    AddType application/pdf .pdf
-</IfModule>
-
-# Prevent directory listing
 Options -Indexes
-
-# Allow only PDF files
-<FilesMatch "\.pdf$">
-    Allow from all
+<Files *>
+    SetHandler none
+    SetType application/octet-stream
+</Files>
+<FilesMatch "\.(pdf)$">
+    SetHandler default-handler
 </FilesMatch>
-
