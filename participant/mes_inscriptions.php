@@ -13,7 +13,7 @@ $stmt->execute([$participant_id]);
 $participant = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $query = "
-    SELECT e.idEvent, e.nomEvent, e.categorie, e.dateDepart, e.dateFin, e.heureDepart, e.heureFin, e.lieu, e.places, p.etat
+    SELECT e.idEvent, e.nomEvent, e.categorie, e.dateDepart, e.dateFin, e.heureDepart, e.heureFin, e.lieu, e.places, e.image, p.etat
     FROM participation p
     JOIN evenements e ON p.evenement_id = e.idEvent
     WHERE p.etudiant_id = ?
@@ -404,6 +404,12 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="events-list">
             <?php foreach ($selectedEvents as $event): ?>
                 <div class="event-card">
+                    <?php if (!empty($event['image']) && file_exists($event['image'])): ?>
+                        <div class="event-image" style="width: 100%; height: 150px; overflow: hidden; border-radius: 8px 8px 0 0;">
+                            <img src="<?= htmlspecialchars($event['image']) ?>" alt="<?= htmlspecialchars($event['nomEvent']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                    <?php endif; ?>
+                    
                     <div class="event-card-header">
                         <div class="event-title-section">
                             <h3><?= htmlspecialchars($event['nomEvent']) ?></h3>
@@ -429,7 +435,7 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                         <div class="event-detail-item">
                             <i class="fa-solid fa-users"></i>
-                            <span><?= htmlspecialchars($event['places']) ?></span>
+                            <span><?= $event['places'] ? htmlspecialchars($event['places']) . ' places' : 'Places illimitées' ?></span>
                         </div>
                     </div>
                 </div>

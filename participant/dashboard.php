@@ -10,12 +10,14 @@ if (!isset($_SESSION['id'])) {
 $stmt = $conn->prepare("SELECT * FROM etudiants NATURAL JOIN utilisateurs WHERE id = ?");
 $stmt->execute([$_SESSION['id']]);
 $participant = $stmt->fetch(PDO::FETCH_ASSOC);
-$events = $conn->query("SELECT * FROM evenements WHERE status='Disponible' ORDER BY dateDepart ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+// Get events - ensure no duplicates
+$events = $conn->query("SELECT DISTINCT * FROM evenements WHERE status='Disponible' ORDER BY dateDepart ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Get registration counts and categories
 $registrationCounts = [];
 $categories = [];
-foreach ($events as &$event) {
+foreach ($events as $event) {
     $countStmt = $conn->prepare("SELECT COUNT(*) as registered FROM participation WHERE evenement_id = ? AND etat = 'Accepté'");
     $countStmt->execute([$event['idEvent']]);
     $registrationCounts[$event['idEvent']] = $countStmt->fetch()['registered'];
@@ -382,12 +384,25 @@ $userInfo = [
 </div>
 
 <div class="cards">
-    <?php foreach ($events as $event): ?>
-        <?php
+    <?php 
+    $renderedIds = [];
+    foreach ($events as $event): 
+        // Check for duplicate rendering
+        if (in_array($event['idEvent'], $renderedIds)) {
+            continue; // Skip duplicates
+        }
+        $renderedIds[] = $event['idEvent'];
+        
         $alreadyRequested = in_array($event['idEvent'], $participations);
         $event['registeredCount'] = $registrationCounts[$event['idEvent']] ?? 0;
-        ?>
-        <div class="card" data-category="<?= htmlspecialchars($event['categorie'] ?? 'Non spécifiée') ?>">
+    ?>
+        <div class="card" data-category="<?= htmlspecialchars($event['categorie'] ?? 'Non spécifiée') ?>" data-event-id="<?= $event['idEvent'] ?>">
+            <?php if (!empty($event['image']) && file_exists($event['image'])): ?>
+                <div class="card-image" style="width: 100%; height: 200px; overflow: hidden; border-radius: 8px 8px 0 0;">
+                    <img src="<?= htmlspecialchars($event['image']) ?>" alt="<?= htmlspecialchars($event['nomEvent']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+            <?php endif; ?>
+            
             <div class="card-header">
                 <h3><?= htmlspecialchars($event['nomEvent']) ?></h3>
                 <?php if ($event['status'] === 'Disponible'): ?>
@@ -411,18 +426,25 @@ $userInfo = [
                     <p><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($event['lieu']) ?></p>
                     <p><i class="fa-solid fa-users"></i>
                         <?php
-                        $registered = $registrationCounts[$event['idEvent']] ?? 0;
-                        $available = max(0, $event['places'] - $registered);
-                        $isFull = $available <= 0;
-                        ?>
-                        <span class="places-info">
-                            <?php if ($isFull): ?>
-                                <span style="color: #dc3545; font-weight: bold;">Complet</span>
-                                (<?= $event['places'] ?>/<?= $event['places'] ?>)
-                            <?php else: ?>
-                                <?= $available ?> disponibles / <?= $event['places'] ?> total
-                            <?php endif; ?>
-                        </span>
+                        if ($event['places'] === null):
+                            ?>
+                            <span class="places-info" style="color: #28a745; font-weight: bold;">
+                                Nombre de places non définit
+                            </span>
+                        <?php else:
+                            $registered = $registrationCounts[$event['idEvent']] ?? 0;
+                            $available = max(0, $event['places'] - $registered);
+                            $isFull = $available <= 0;
+                            ?>
+                            <span class="places-info">
+                                <?php if ($isFull): ?>
+                                    <span style="color: #dc3545; font-weight: bold;">Complet</span>
+                                    (<?= $event['places'] ?>/<?= $event['places'] ?>)
+                                <?php else: ?>
+                                    <?= $available ?> disponibles / <?= $event['places'] ?> total
+                                <?php endif; ?>
+                            </span>
+                        <?php endif; ?>
                     </p>
                 </div>
             </div>
@@ -558,12 +580,16 @@ $userInfo = [
 
             const registeredCount = event.registeredCount || 0;
             const maxPlaces = event.places;
-            const availablePlaces = Math.max(0, maxPlaces - registeredCount);
 
-            if (availablePlaces <= 0) {
-                modalCapacityInfo.innerHTML = `<span style="color: #dc3545; font-weight: bold;">Événement complet</span><br>(${maxPlaces}/${maxPlaces} places occupées)`;
+            if (maxPlaces === null || maxPlaces === undefined || maxPlaces === '') {
+                modalCapacityInfo.innerHTML = `<span style="color: #28a745; font-weight: bold;">Nombre de places non définit</span><br>(${registeredCount} participant${registeredCount > 1 ? 's' : ''} inscrit${registeredCount > 1 ? 's' : ''})`;
             } else {
-                modalCapacityInfo.innerHTML = `${availablePlaces} places disponibles sur ${maxPlaces} total<br>(${registeredCount} places déjà occupées)`;
+                const availablePlaces = Math.max(0, maxPlaces - registeredCount);
+                if (availablePlaces <= 0) {
+                    modalCapacityInfo.innerHTML = `<span style="color: #dc3545; font-weight: bold;">Événement complet</span><br>(${maxPlaces}/${maxPlaces} places occupées)`;
+                } else {
+                    modalCapacityInfo.innerHTML = `${availablePlaces} places disponibles sur ${maxPlaces} total<br>(${registeredCount} places déjà occupées)`;
+                }
             }
 
             const participationFormSection = document.querySelector('.participation-form');
@@ -581,7 +607,8 @@ $userInfo = [
                 submitBtn.style.display = 'none';
                 cancelBtn.style.display = 'inline-block';
             } else {
-                const isEventFull = registeredCount >= maxPlaces;
+                // Check if event is full (only if maxPlaces is defined and not null/unlimited)
+                const isEventFull = (maxPlaces !== null && maxPlaces !== undefined && maxPlaces !== '') && (registeredCount >= maxPlaces);
 
                 if (isEventFull) {
                     participationFormSection.style.display = 'none';
@@ -658,7 +685,9 @@ $userInfo = [
         const statusFilter = document.getElementById('statusFilter');
         const categoryFilter = document.getElementById('categoryFilter');
         const cardsContainer = document.querySelector('.cards');
-        const cards = cardsContainer ? Array.from(cardsContainer.children) : [];
+        
+        // Only select divs with class 'card'
+        const cards = cardsContainer ? Array.from(cardsContainer.querySelectorAll('.card')) : [];
 
         if (searchInput && statusFilter && categoryFilter && cards.length > 0) {
             const filterEvents = function() {
@@ -694,8 +723,6 @@ $userInfo = [
             categoryFilter.addEventListener('change', filterEvents);
             filterEvents();
         }
-
-        console.log('Dashboard JavaScript initialized successfully');
     });
 </script>
 </body>

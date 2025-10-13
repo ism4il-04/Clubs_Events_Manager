@@ -1,0 +1,21 @@
+# Allow images to be served
+<IfModule mod_rewrite.c>
+    RewriteEngine Off
+</IfModule>
+
+# Set proper MIME types
+<IfModule mod_mime.c>
+    AddType image/jpeg .jpg .jpeg
+    AddType image/png .png
+    AddType image/gif .gif
+    AddType image/webp .webp
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Allow only image files
+<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+    Allow from all
+</FilesMatch>
+

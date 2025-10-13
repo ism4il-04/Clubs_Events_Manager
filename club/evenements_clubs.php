@@ -90,7 +90,11 @@ include "../includes/header.php";
                 <div class="event-card-inner">
                     <!-- Event Image/Icon -->
                     <div class="event-image">
-                        <div class="event-icon"><i class="bi bi-bullseye"></i></div>
+                        <?php if (!empty($event['image']) && file_exists('../' . $event['image'])): ?>
+                            <img src="../<?= htmlspecialchars($event['image']) ?>" alt="<?= htmlspecialchars($event['nomEvent']) ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                        <?php else: ?>
+                            <div class="event-icon"><i class="bi bi-bullseye"></i></div>
+                        <?php endif; ?>
                 </div>
 
                     <!-- Event Content -->
@@ -126,7 +130,7 @@ include "../includes/header.php";
                                     <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
                                     </svg>
-                                    <?= htmlspecialchars($event['places']) ?> places
+                                    <?= $event['places'] ? htmlspecialchars($event['places']) . ' places' : 'Places non définis' ?>
                                 </div>
                                 <div class="info-item">
                                     <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
@@ -187,7 +191,7 @@ include "../includes/header.php";
                                         <strong>Lieu:</strong> <?= htmlspecialchars($event['lieu']) ?>
                                     </div>
                                     <div class="mb-3">
-                                        <strong>Places disponibles:</strong> <?= htmlspecialchars($event['places']) ?>
+                                        <strong>Places disponibles:</strong> <?= $event['places'] ? htmlspecialchars($event['places']) : 'non définis' ?>
                                     </div>
                                 </div>
                                 <div class="col-md-6">

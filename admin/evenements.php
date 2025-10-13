@@ -124,7 +124,7 @@ $message = $_GET['message'] ?? '';
                         <small><?= htmlspecialchars($event['heureDepart']) ?></small>
                     </td>
                     <td><?= htmlspecialchars($event['lieu']) ?></td>
-                    <td><?= htmlspecialchars($event['places']) ?></td>
+                    <td><?= $event['places'] ? htmlspecialchars($event['places']) : 'Illimité' ?></td>
                     <td>
                         <span class="badge 
                             <?= $event['status'] == 'Disponible' ? 'bg-success' : 
