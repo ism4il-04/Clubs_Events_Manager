@@ -69,8 +69,8 @@ function generateCertificate($conn, $participantId, $event, $logoClub, $logoEcol
     
     $dompdf->loadHtml($html);
     
-    // Set paper size to A4 landscape (297mm x 210mm)
-    $dompdf->setPaper('A4', 'landscape');
+    // Set paper size to A4 landscape with reduced margins
+    $dompdf->setPaper([0, 0, 375, 750], 'landscape'); // Smaller than A4
     
     // Render the PDF
     $dompdf->render();

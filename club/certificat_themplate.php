@@ -5,7 +5,6 @@
     <style>
         @page {
             margin: 0;
-            size: A4 landscape;
         }
         * {
             margin: 0;
@@ -16,39 +15,36 @@
             font-family: 'Georgia', 'Times New Roman', Times, serif;
             background: #ffffff;
             margin: 0;
-            padding: 15mm 20mm;
+            padding: 5mm 10mm;
         }
         .certificate {
             width: 100%;
             height: auto;
-            min-height: 180mm;
             position: relative;
         }
         
         /* Borders */
         .border-outer {
             border: 3px solid #1e3a8a;
-            padding: 10mm;
-            min-height: 180mm;
+            padding: 3mm;
         }
         .border-inner {
             border: 1px solid #3b82f6;
-            padding: 8mm;
-            min-height: 160mm;
+            padding: 2mm;
         }
         
         /* Header with logos */
         .header-logos {
             position: relative;
-            height: 60px;
-            margin-bottom: 10px;
+            height: 45px;
+            margin-bottom: 5px;
             z-index: 10;
         }
         .logo-left, .logo-right {
             position: absolute;
             top: 0;
-            max-height: 55px;
-            max-width: 90px;
+            max-height: 45px;
+            max-width: 75px;
         }
         .logo-left {
             left: 0;
@@ -60,18 +56,18 @@
         /* Title section */
         .title-section {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
         .certificate-title {
-            font-size: 42px;
+            font-size: 36px;
             color: #1e3a8a;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
         }
         .certificate-subtitle {
-            font-size: 22px;
+            font-size: 18px;
             color: #3b82f6;
             font-style: italic;
             letter-spacing: 1px;
@@ -80,44 +76,44 @@
         /* Content section */
         .content {
             text-align: center;
-            margin: 20px auto;
-            padding: 0 60px;
+            margin: 10px auto;
+            padding: 0 40px;
         }
         .content p {
-            font-size: 16px;
-            line-height: 1.6;
+            font-size: 14px;
+            line-height: 1.4;
             color: #1f2937;
-            margin: 10px 0;
+            margin: 6px 0;
         }
         .student-name {
-            font-size: 28px;
+            font-size: 24px;
             color: #1e3a8a;
             font-weight: bold;
-            margin: 15px 0;
+            margin: 10px 0;
             text-transform: uppercase;
             letter-spacing: 2px;
             text-decoration: underline;
             text-decoration-thickness: 2px;
-            text-underline-offset: 5px;
+            text-underline-offset: 4px;
         }
         .student-info {
-            font-size: 17px;
+            font-size: 15px;
             color: #374151;
-            margin: 10px 0;
+            margin: 8px 0;
             font-weight: 500;
         }
         .event-name {
-            font-size: 24px;
+            font-size: 20px;
             color: #3b82f6;
             font-weight: bold;
-            margin: 15px 0;
+            margin: 10px 0;
             font-style: italic;
         }
         .event-details {
-            font-size: 15px;
+            font-size: 13px;
             color: #4b5563;
-            line-height: 1.8;
-            margin: 15px 0;
+            line-height: 1.6;
+            margin: 10px 0;
         }
         .event-details strong {
             color: #1e3a8a;
@@ -125,22 +121,24 @@
         
         /* Signatures section */
         .signatures {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 30px;
-            margin-bottom: 20px;
+            width: 100%;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            display: table;
         }
         .signature-block {
-            width: 40%;
+            display: table-cell;
+            width: 50%;
             text-align: center;
+            vertical-align: top;
         }
         .signature-line {
             border-top: 2px solid #1f2937;
-            width: 180px;
-            margin: 0 auto 8px;
+            width: 150px;
+            margin: 0 auto 6px;
         }
         .signature-label {
-            font-size: 13px;
+            font-size: 11px;
             color: #4b5563;
             font-weight: bold;
         }
@@ -148,9 +146,9 @@
         /* Footer */
         .footer {
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             color: #6b7280;
-            margin-top: 15px;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -182,7 +180,7 @@
                     
                     <div class="student-info">
                         <?php if (!empty($participantData['annee'])): ?>
-                            <?= htmlspecialchars($participantData['annee']) ?>ème année
+                            <?= htmlspecialchars($participantData['annee']) ?> année
                         <?php endif; ?>
                         <?php if (!empty($participantData['filiere'])): ?>
                             <?= htmlspecialchars($participantData['filiere']) ?>
