@@ -6,7 +6,10 @@ function fetchInformations ($conn) {
     $stmt->execute(array($_SESSION['email']));
     return $stmt->fetchAll();
 }
-$club = fetchInformations($conn)[0];
+
+$informations = fetchInformations($conn);
+$club = !empty($informations) ? $informations[0] : null;
+
 
 ?>
 <style>
@@ -36,7 +39,7 @@ $club = fetchInformations($conn)[0];
         </div>
     </div>
     <div class="header-right">
-        <span><?= htmlspecialchars($club['clubNom']) ?></span>
+        <span><?= htmlspecialchars($club['clubNom'] ?? 'Utilisateur') ?></span>
         <a href="../logout.php">
             <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
         </a>

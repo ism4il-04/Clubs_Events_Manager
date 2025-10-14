@@ -103,17 +103,46 @@ include "../includes/header.php";
                             <div class="event-header">
                                 <h3 class="event-title"><?= htmlspecialchars($event['nomEvent']) ?></h3>
                     <?php
-                        $status = $event['status'];
-                                    $statusClass = [
-                                        'En attente' => 'status-pending',
-                                        'Rejeté' => 'status-rejected',
-                                        'Disponible' => 'status-available',
-                                        'Sold out' => 'status-soldout',
-                                        'En cours' => 'status-ongoing',
-                                        'Terminé' => 'status-completed',
-                                        'Annulé' => 'status-cancelled'
-                                    ][$status] ?? 'status-pending';
-                                ?>
+                        // Determine status based on conditions
+                        $currentDateTime = date('Y-m-d H:i:s');
+                        $eventEndDateTime = $event['dateFin'] . ' ' . $event['heureFin'];
+                        
+                        // Count registered participants
+                        $countStmt = $conn->prepare("SELECT COUNT(*) as registered FROM participation WHERE evenement_id = ? AND etat = 'Accepté'");
+                        $countStmt->execute([$event['idEvent']]);
+                        $registeredCount = $countStmt->fetch()['registered'];
+                        
+                        // Determine new status
+                        $newStatus = $event['status'];
+                        
+                        // Check if event date has passed
+                        if (strtotime($eventEndDateTime) < strtotime($currentDateTime)) {
+                            $newStatus = 'Terminé';
+                        }
+                        // Check if no available places (count >= max places)
+                        elseif (!empty($event['places']) && $registeredCount >= $event['places']) {
+                            $newStatus = 'Sold out';
+                        }
+                        
+                        // Update database if status has changed
+                        if ($newStatus !== $event['status']) {
+                            $updateStmt = $conn->prepare("UPDATE evenements SET status = ? WHERE idEvent = ?");
+                            $updateStmt->execute([$newStatus, $event['idEvent']]);
+                            $status = $newStatus;
+                        } else {
+                            $status = $event['status'];
+                        }
+                        
+                        $statusClass = [
+                            'En attente' => 'status-pending',
+                            'Rejeté' => 'status-rejected',
+                            'Disponible' => 'status-available',
+                            'Sold out' => 'status-soldout',
+                            'En cours' => 'status-ongoing',
+                            'Terminé' => 'status-completed',
+                            'Annulé' => 'status-cancelled'
+                        ][$status] ?? 'status-pending';
+                    ?>
                                 <span class="event-status <?= $statusClass ?>"><?= htmlspecialchars($status) ?></span>
                             </div>
                             
@@ -130,7 +159,13 @@ include "../includes/header.php";
                                     <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
                                     </svg>
-                                    <?= $event['places'] ? htmlspecialchars($event['places']) . ' places' : 'Places non définis' ?>
+                                    <?php
+                                    if ($event['places']):
+                                        echo htmlspecialchars($registeredCount) . ' / ' . htmlspecialchars($event['places']) . ' places';
+                                    else:
+                                        echo 'Places non définis';
+                                    endif;
+                                    ?>
                                 </div>
                                 <div class="info-item">
                                     <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
@@ -155,7 +190,7 @@ include "../includes/header.php";
                                 Détails
                             </button>
                             
-                            <?php if (in_array($status, ['en attente'])): ?>
+                            <?php if (in_array($status, ['En attente'])): ?>
                                 <a href="#?id=<?= $event['idEvent'] ?>" class="btn-action btn-edit">Modifier</a>
                                 <a href="#?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
                             <?php elseif (in_array($status, ['Disponible', 'Sold out'])): ?>

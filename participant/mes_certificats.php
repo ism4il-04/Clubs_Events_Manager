@@ -1,16 +1,18 @@
 <?php
 session_start();
 if(!isset($_SESSION["email"])){
-    header("../login.php");
+    header("Location: ../login.php");
+    exit;
 }
+
 include "../includes/db.php";
 $participant_id = $_SESSION['id'];
 $stmt = $conn->prepare("SELECT * FROM etudiants WHERE id = ?");
 $stmt->execute([$participant_id]);
 $participant = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$attestation = $conn->prepare("SELECT * FROM participation NATURAL JOIN evenements WHERE etudiant_id = ? AND attestation IS NOT NULL");
-$attestation->execute(array($_SESSION["id"]));
+$attestation = $conn->prepare("SELECT * FROM participation p JOIN evenements e on p.evenement_id=e.idEvent  WHERE p.etudiant_id = ? AND p.attestation is NOT NULL");
+$attestation->execute(array($participant_id));
 $attestation = $attestation->fetchAll();
 ?>
 <!DOCTYPE html>
@@ -370,18 +372,10 @@ $attestation = $attestation->fetchAll();
 </header>
 
 <nav class="nav">
-    <a href="dashboard.php">
-        <button>Tous les événements</button>
-    </a>
-    <a href="mes_inscriptions.php">
-        <button>Mes inscriptions</button>
-    </a>
-    <a href="mes_certificats.php">
-        <button class="active">Mes certificats</button>
-    </a>
-    <a href="profile.php">
-        <button>Mon profil</button>
-    </a>
+    <a href="dashboard.php"><button>Tous les événements</button></a>
+    <a href="mes_inscriptions.php"><button>Mes inscriptions</button></a>
+    <a href="mes_certificats.php"><button class="active">Mes certificats</button></a>
+    <a href="profile.php"><button>Mon profil</button></a>
 </nav>
 
 <div class="container">
@@ -389,6 +383,7 @@ $attestation = $attestation->fetchAll();
         <h1>Mes certificats</h1>
         <p>Vos certificats</p>
     </div>
+
     <?php if (count($attestation) > 0): ?>
         <div class="events-list">
             <?php foreach ($attestation as $att): ?>
@@ -399,27 +394,8 @@ $attestation = $attestation->fetchAll();
                             <p class="event-club"><?= htmlspecialchars($att['categorie']) ?></p>
                         </div>
                         <span class="status-badge">
-                          <a href="<?='../'.htmlspecialchars($att['attestation']) ?> download"><i class="fa-solid fa-download"></i>Telecharger</a>
+                            <a href="../<?= $att['attestation'] ?>" download>Télécharger </a>
                         </span>
-                    </div>
-
-<!--                    <div class="event-details">-->
-<!--                        <div class="event-detail-item">-->
-<!--                            <i class="fa-regular fa-calendar"></i>-->
-<!--                            <span>-->
-<!--                                --><?php //= date('Y-m-d', strtotime($att['dateDepart'])) ?><!-- au-->
-<!--                                --><?php //= date('Y-m-d', strtotime($att['dateFin'])) ?><!-- •-->
-<!--                                <strong>--><?php //= htmlspecialchars($att['heureDepart']) ?><!-- - --><?php //= htmlspecialchars($att['heureFin']) ?><!--</strong>-->
-<!--                            </span>-->
-<!--                        </div>-->
-<!--                        <div class="event-detail-item">-->
-<!--                            <i class="fa-solid fa-location-dot"></i>-->
-<!--                            <span>--><?php //= htmlspecialchars($att['lieu']) ?><!--</span>-->
-<!--                        </div>-->
-<!--                        <div class="event-detail-item">-->
-<!--                            <i class="fa-solid fa-users"></i>-->
-<!--                            <span>--><?php //= htmlspecialchars($att['places']) ?><!--</span>-->
-<!--                        </div>-->
                     </div>
                 </div>
             <?php endforeach; ?>

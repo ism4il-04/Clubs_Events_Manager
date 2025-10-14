@@ -491,10 +491,16 @@ $userInfo = [
     </select>
     <select id="categoryFilter">
         <option value="">Toutes les catégories</option>
-        <option value="Non spécifiée">Non spécifiée</option>
-        <?php foreach ($categories as $cat): ?>
-            <option value="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></option>
-        <?php endforeach; ?>
+        <option value="Conférence">Conférence</option>
+        <option value="Formation">Formation</option>
+        <option value="Sortie pédagogique">Sortie pédagogique</option>
+        <option value="Sortie">Sortie</option>
+        <option value="Séminaire">Séminaire</option>
+        <option value="Hackathon">Hackathon</option>
+        <option value="Table ronde/ Débat">Table ronde/ Débat</option>
+        <option value="Compétition">Compétition</option>
+        <option value="Sportif">Sportif</option>
+        <option value="Autre">Autre</option>
     </select>
 </div>
 
@@ -534,9 +540,15 @@ $userInfo = [
                 <p><?= htmlspecialchars($event['descriptionEvenement']) ?></p>
 
                 <div class="infos">
-                    <p><i class="fa-regular fa-calendar"></i> <?= htmlspecialchars($event['dateDepart']) ?>
-                        <strong><?= htmlspecialchars($event['heureDepart']) ?></strong> → <?= htmlspecialchars($event['dateFin']) ?>
-                        <strong><?= htmlspecialchars($event['heureFin']) ?></strong>
+                    <p><i class="fa-regular fa-calendar"></i>
+                        <?php if ($event['dateDepart'] === $event['dateFin']): ?>
+                            <?= htmlspecialchars($event['dateDepart']) ?>
+                            <strong><?= htmlspecialchars($event['heureDepart']) ?></strong> → <strong><?= htmlspecialchars($event['heureFin']) ?></strong>
+                        <?php else: ?>
+                            <?= htmlspecialchars($event['dateDepart']) ?>
+                            <strong><?= htmlspecialchars($event['heureDepart']) ?></strong> → <?= htmlspecialchars($event['dateFin']) ?>
+                            <strong><?= htmlspecialchars($event['heureFin']) ?></strong>
+                        <?php endif; ?>
                     </p>
                     <p><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($event['lieu']) ?></p>
                     <p><i class="fa-solid fa-users"></i>
@@ -684,7 +696,14 @@ $userInfo = [
             modalTitle.textContent = event.nomEvent;
             modalClub.textContent = event.categorie ? event.categorie : 'Non spécifiée';
             modalDescription.textContent = event.descriptionEvenement;
-            modalPeriod.innerHTML = `${event.dateDepart} au ${event.dateFin}<br>${event.heureDepart} - ${event.heureFin}`;
+            
+            // Format date display for modal
+            if (event.dateDepart === event.dateFin) {
+                modalPeriod.innerHTML = `${event.dateDepart}<br>${event.heureDepart} → ${event.heureFin}`;
+            } else {
+                modalPeriod.innerHTML = `${event.dateDepart} au ${event.dateFin}<br>${event.heureDepart} → ${event.heureFin}`;
+            }
+            
             modalLieu.textContent = event.lieu;
             modalEventId.value = event.idEvent;
 

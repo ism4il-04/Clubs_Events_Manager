@@ -26,16 +26,16 @@ function generateCertificate($conn, $participantId, $event, $logoClub, $logoEcol
     $stmt = $conn->prepare("SELECT * FROM etudiants WHERE id = ?");
     $stmt->execute([$participantId]);
     $participantData = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if (!$participantData) {
         return false;
     }
-    
+
     // Get organizer name
     $stmt = $conn->prepare("SELECT clubNom FROM organisateur WHERE id = ?");
     $stmt->execute([$event['organisateur_id']]);
     $organisateurName = $stmt->fetchColumn();
-    
+
     // Convert logos to base64 for embedding in PDF
     $logoEcoleBase64 = '';
     if (!empty($logoEcole)) {
@@ -47,7 +47,7 @@ function generateCertificate($conn, $participantId, $event, $logoClub, $logoEcol
             $logoEcoleBase64 = 'data:image/' . $ext . ';base64,' . $base64;
         }
     }
-    
+
     $logoClubBase64 = '';
     if (!empty($logoClub)) {
         $logoPath = file_exists('../' . $logoClub) ? '../' . $logoClub : $logoClub;
@@ -58,45 +58,45 @@ function generateCertificate($conn, $participantId, $event, $logoClub, $logoEcol
             $logoClubBase64 = 'data:image/' . $ext . ';base64,' . $base64;
         }
     }
-    
+
     // Instantiate dompdf
     $dompdf = new Dompdf();
-    
+
     // Capture the template output
     ob_start();
-    include "certificat_themplate.php"; 
+    include "certificat_themplate.php";
     $html = ob_get_clean();
-    
+
     $dompdf->loadHtml($html);
-    
+
     // Set paper size to A4 landscape with reduced margins
     $dompdf->setPaper([0, 0, 375, 750], 'landscape'); // Smaller than A4
-    
+
     // Render the PDF
     $dompdf->render();
-    
+
     // Get PDF output
     $pdf = $dompdf->output();
-    
+
     // Create directory if doesn't exist
     $uploadDir = '../assets/uploads/certificates/';
     if (!is_dir($uploadDir)) {
         mkdir($uploadDir, 0777, true);
     }
-    
+
     // Generate filename
     $fileName = 'certificate_' . $event['idEvent'] . '_' . $participantId . '_' . time() . '.pdf';
     $filePath = $uploadDir . $fileName;
     $relativePath = 'assets/uploads/certificates/' . $fileName;
-    
+
     // Save PDF to file
     file_put_contents($filePath, $pdf);
-    
+
     // Update database with certificate path
     $stmt = $conn->prepare("UPDATE participation SET attestation = ?, certified = 1 WHERE evenement_id = ? AND etudiant_id = ?");
     $stmt->execute([$relativePath, $event['idEvent'], $participantId]);
-    
-    
+
+
     return true;
 }
 
@@ -127,6 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 ?>
 
+
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -141,14 +143,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../includes/script.js"></script>
     <title>Gestion des Certificats</title>
-    
+
     <style>
         .certificates-container {
             max-width: 1200px;
             margin: 2rem auto;
             padding: 2rem;
         }
-        
+
         .event-card {
             background: white;
             border-radius: 12px;
@@ -160,36 +162,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             align-items: center;
             transition: box-shadow 0.3s ease;
         }
-        
+
         .event-card:hover {
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        
+
         .event-info {
             flex: 1;
         }
-        
+
         .event-title {
             font-size: 1.2rem;
             font-weight: 600;
             color: #2c3e50;
             margin: 0 0 0.5rem 0;
         }
-        
+
         .event-details {
             color: #6c757d;
             font-size: 0.9rem;
         }
-        
+
         .event-details i {
             margin-right: 0.25rem;
             color: #007bff;
         }
-        
+
         .event-details span {
             margin-right: 1.5rem;
         }
-        
+
         .btn-open-modal {
             background: linear-gradient(135deg, #007bff, #0056b3);
             border: none;
@@ -200,12 +202,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             cursor: pointer;
             transition: transform 0.2s ease;
         }
-        
+
         .btn-open-modal:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
-        
+
         .modal {
             display: none;
             position: fixed;
@@ -216,7 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             height: 100%;
             background-color: rgba(0,0,0,0.5);
         }
-        
+
         .modal-content {
             background-color: white;
             margin: 5% auto;
@@ -228,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             display: flex;
             flex-direction: column;
         }
-        
+
         .modal-header {
             padding: 1rem 1.5rem;
             border-bottom: 1px solid #e9ecef;
@@ -236,13 +238,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .modal-header h3 {
             margin: 0;
             color: #2c3e50;
             font-size: 1.25rem;
         }
-        
+
         .close {
             font-size: 1.75rem;
             font-weight: bold;
@@ -250,18 +252,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             cursor: pointer;
             line-height: 1;
         }
-        
+
         .close:hover {
             color: #000;
         }
-        
+
         .modal-body {
             padding: 1rem;
             overflow-y: auto;
             flex: 1;
             max-height: 400px;
         }
-        
+
         .modal-footer {
             padding: 0.75rem 1rem;
             border-top: 1px solid #e9ecef;
@@ -269,7 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             gap: 0.75rem;
             justify-content: space-between;
         }
-        
+
         .participant-item {
             padding: 0.5rem;
             border: 1px solid #e9ecef;
@@ -279,28 +281,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             align-items: center;
             gap: 0.75rem;
         }
-        
+
         .participant-item input[type="checkbox"] {
             width: 18px;
             height: 18px;
             cursor: pointer;
             flex-shrink: 0;
         }
-        
+
         .participant-item input[type="checkbox"]:disabled {
             cursor: not-allowed;
         }
-        
+
         .participant-item.certified {
             background: #f8f9fa;
         }
-        
+
         .participant-name {
             flex: 1;
             font-weight: 500;
             font-size: 0.9rem;
         }
-        
+
         .certified-badge {
             background: #28a745;
             color: white;
@@ -309,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             font-size: 0.75rem;
             white-space: nowrap;
         }
-        
+
         .btn-select-all, .btn-unselect-all {
             background: #6c757d;
             color: white;
@@ -319,11 +321,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             cursor: pointer;
             font-size: 0.875rem;
         }
-        
+
         .btn-select-all:hover, .btn-unselect-all:hover {
             background: #5a6268;
         }
-        
+
         .btn-submit {
             background: linear-gradient(135deg, #28a745, #20c997);
             color: white;
@@ -334,11 +336,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             cursor: pointer;
             font-size: 0.875rem;
         }
-        
+
         .btn-submit:hover {
             box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
         }
-        
+
         .btn-close {
             background: #6c757d;
             color: white;
@@ -349,17 +351,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             cursor: pointer;
             font-size: 0.875rem;
         }
-        
+
         .btn-close:hover {
             background: #5a6268;
         }
-        
+
         .empty-state {
             text-align: center;
             padding: 3rem;
             color: #6c757d;
         }
-        
+
         .empty-state i {
             font-size: 4rem;
             margin-bottom: 1rem;
@@ -383,7 +385,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <h2><i class="bi bi-award me-2"></i>Gestion des Certificats</h2>
             <p>Générer les certificats de participation pour vos événements</p>
         </div>
-        
+
         <?php if (empty($events)): ?>
             <div class="empty-state">
                 <i class="bi bi-calendar-x"></i>
@@ -408,7 +410,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-    
+
     <!-- Modal for participants -->
     <div id="participantsModal" class="modal">
         <div class="modal-content">
@@ -419,11 +421,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <form method="POST" action="" id="certificateForm">
                 <input type="hidden" name="action" value="generate_certificates">
                 <input type="hidden" name="event_id" id="modalEventId">
-                
+
                 <div class="modal-body" id="participantsList">
                     <!-- Participants will be loaded here via JavaScript -->
                 </div>
-                
+
                 <div class="modal-footer">
                     <div>
                         <button type="button" class="btn-select-all" onclick="selectAll()">Tout sélectionner</button>
@@ -437,7 +439,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             </form>
         </div>
     </div>
-    
+
     <script>
         // Store participants data for the modal
         const participantsData = <?= json_encode(
@@ -454,19 +456,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 return $carry;
             }, [])
         ) ?>;
-        
+
         function openParticipantsModal(eventId, eventName) {
             const modal = document.getElementById('participantsModal');
             const modalEventName = document.getElementById('modalEventName');
             const modalEventId = document.getElementById('modalEventId');
             const participantsList = document.getElementById('participantsList');
-            
+
             modalEventName.textContent = eventName;
             modalEventId.value = eventId;
-            
+
             // Load participants for this event
             const participants = participantsData[eventId] || [];
-            
+
             if (participants.length === 0) {
                 participantsList.innerHTML = '<p style="text-align: center; color: #6c757d;">Aucun participant accepté pour cet événement.</p>';
             } else {
@@ -475,7 +477,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     const isCertified = participant.certified == 1;
                     const disabled = isCertified ? 'disabled checked' : '';
                     const certifiedClass = isCertified ? 'certified' : '';
-                    
+
                     html += `
                         <div class="participant-item ${certifiedClass}">
                             <input type="checkbox" name="participants[]" value="${participant.student_id}" ${disabled}>
@@ -486,24 +488,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 });
                 participantsList.innerHTML = html;
             }
-            
+
             modal.style.display = 'block';
         }
-        
+
         function closeModal() {
             document.getElementById('participantsModal').style.display = 'none';
         }
-        
+
         function selectAll() {
             const checkboxes = document.querySelectorAll('#participantsList input[type="checkbox"]:not(:disabled)');
             checkboxes.forEach(cb => cb.checked = true);
         }
-        
+
         function unselectAll() {
             const checkboxes = document.querySelectorAll('#participantsList input[type="checkbox"]:not(:disabled)');
             checkboxes.forEach(cb => cb.checked = false);
         }
-        
+
         // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('participantsModal');
@@ -512,7 +514,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             }
         }
     </script>
-    
+
 </div>
 </body>
 </html>
