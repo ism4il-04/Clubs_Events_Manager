@@ -78,6 +78,59 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../includes/script.js"></script>
     <title>Demandes des Participants</title>
+    
+    <style>
+        .btn-validate {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-validate:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            color: white;
+        }
+        
+        .btn-reject {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-reject:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            color: white;
+        }
+        
+        .btn-view {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-view:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            color: white;
+        }
+    </style>
 </head>
 <body>
 <div>
@@ -161,7 +214,7 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                                     <?php if (isset($demande['photo']) && !empty($demande['photo'])): ?>
                                         <img src="data:image/jpeg;base64,<?= $demande['photo'] ?>" class="photo-thumb" alt="Photo">
                                     <?php else: ?>
-                                        <img src="../pic.jpg" class="photo-thumb" alt="Photo par défaut">
+                                        <img src="../assets/photo/default.jpg" class="photo-thumb" alt="Photo par défaut">
                                     <?php endif; ?>
                                 </td>
                                 <td><?= htmlspecialchars($demande['prenom'].' '.$demande['nom']) ?></td>

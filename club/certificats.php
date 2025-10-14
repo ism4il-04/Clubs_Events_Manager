@@ -15,7 +15,7 @@ use Dompdf\Dompdf;
 $stmt = $conn->prepare("
     SELECT e.*
     FROM evenements e
-    WHERE e.organisateur_id = ? and etat='Terminé'
+    WHERE e.organisateur_id = ? and status='Terminé'
     ORDER BY e.dateFin DESC
 ");
 $stmt->execute([$_SESSION['id']]);
@@ -398,9 +398,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <div class="event-info">
                         <h3 class="event-title"><?= htmlspecialchars($event['nomEvent']) ?></h3>
                         <div class="event-details">
-                            <span><i class="bi bi-calendar3"></i><?= date('d/m/Y', strtotime($event['dateDepart'])) ?> - <?= date('d/m/Y', strtotime($event['dateFin'])) ?></span>
+                            <?php if ($event['dateDepart'] != $event['dateFin']): ?>
+                                <span><i class="bi bi-calendar3"></i>Du <?= date('d/m/Y', strtotime($event['dateDepart'])) ?> au <?= date('d/m/Y', strtotime($event['dateFin'])) ?></span>
+                            <?php else: ?>
+                                <span><i class="bi bi-calendar3"></i>Le <?= date('d/m/Y', strtotime($event['dateDepart'])) ?></span>
+                            <?php endif; ?>
                             <span><i class="bi bi-geo-alt-fill"></i><?= htmlspecialchars($event['lieu']) ?></span>
-                            <span><i class="bi bi-tag-fill"></i><?= htmlspecialchars($event['categorie'] ?? 'N/A') ?></span>
                         </div>
                     </div>
                     <button type="button" class="btn-open-modal" onclick="openParticipantsModal(<?= $event['idEvent'] ?>, '<?= htmlspecialchars($event['nomEvent'], ENT_QUOTES) ?>')">
