@@ -51,8 +51,36 @@ function fetchEvents($conn) {
 }
 
 function traiterDemande($conn, $etu, $event, $rep) {
+    // Update participation status
     $stmt = $conn->prepare("UPDATE participation SET etat = ? WHERE etudiant_id = ? AND evenement_id = ?");
     $stmt->execute([$rep, $etu, $event]);
+    
+    // Get event details
+    $stmt = $conn->prepare("SELECT places, status FROM evenements WHERE idEvent = ?");
+    $stmt->execute([$event]);
+    $eventData = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Only check if places is defined (not unlimited)
+    if ($eventData && !empty($eventData['places'])) {
+        // Count accepted participants
+        $stmt = $conn->prepare("SELECT COUNT(*) as accepted FROM participation WHERE evenement_id = ? AND etat = 'Accepté'");
+        $stmt->execute([$event]);
+        $acceptedCount = $stmt->fetch(PDO::FETCH_ASSOC)['accepted'];
+        
+        if ($rep === 'Accepté') {
+            // If full, update status to Sold out
+            if ($acceptedCount >= $eventData['places']) {
+                $stmt = $conn->prepare("UPDATE evenements SET status = 'Sold out' WHERE idEvent = ?");
+                $stmt->execute([$event]);
+            }
+        } elseif ($rep === 'Refusé') {
+            // If event was sold out and now has free places, make it available again
+            if ($eventData['status'] === 'Sold out' && $acceptedCount < $eventData['places']) {
+                $stmt = $conn->prepare("UPDATE evenements SET status = 'Disponible' WHERE idEvent = ?");
+                $stmt->execute([$event]);
+            }
+        }
+    }
 }
 
 // Get filter values
