@@ -29,44 +29,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         
         // Handle modification requests
-        if (isset($_POST['modification_id']) && in_array($action, ['approuver_modification', 'rejeter_modification'])) {
-            $modification_id = $_POST['modification_id'];
+        if (isset($_POST['event_id']) && in_array($action, ['approuver_modification', 'rejeter_modification'])) {
+            $event_id = $_POST['event_id'];
             
-            // Get modification details
-            $stmt = $conn->prepare("SELECT * FROM demandes_modifications WHERE id = ?");
-            $stmt->execute([$modification_id]);
-            $modification = $stmt->fetch(PDO::FETCH_ASSOC);
+            // Get event details
+            $stmt = $conn->prepare("SELECT * FROM evenements WHERE idEvent = ?");
+            $stmt->execute([$event_id]);
+            $event = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($modification) {
+            if ($event && $event['status'] === 'Modification demandée') {
                 if ($action === 'approuver_modification') {
-                    // Apply modifications to the event
-                    $stmt = $conn->prepare("UPDATE evenements SET nomEvent = ?, descriptionEvenement = ?, categorie = ?, lieu = ?, places = ?, dateDepart = ?, heureDepart = ?, dateFin = ?, heureFin = ?, image = ?, status = 'Disponible' WHERE idEvent = ?");
-                    $stmt->execute([
-                        $modification['nomEvent'],
-                        $modification['descriptionEvenement'],
-                        $modification['categorie'],
-                        $modification['lieu'],
-                        $modification['places'],
-                        $modification['dateDepart'],
-                        $modification['heureDepart'],
-                        $modification['dateFin'],
-                        $modification['heureFin'],
-                        $modification['image'],
-                        $modification['evenement_id']
-                    ]);
+                    // Decode and apply modifications
+                    $modificationData = json_decode($event['modification_data'], true);
                     
-                    // Update modification request status
-                    $stmt = $conn->prepare("UPDATE demandes_modifications SET status = 'Approuvé' WHERE id = ?");
-                    $stmt->execute([$modification_id]);
-                    
-                    $message = "Modification approuvée et appliquée avec succès !";
+                    if ($modificationData) {
+                        $stmt = $conn->prepare("UPDATE evenements SET 
+                            nomEvent = ?, 
+                            descriptionEvenement = ?, 
+                            categorie = ?, 
+                            lieu = ?, 
+                            places = ?, 
+                            dateDepart = ?, 
+                            heureDepart = ?, 
+                            dateFin = ?, 
+                            heureFin = ?, 
+                            image = ?, 
+                            status = 'Disponible',
+                            motif_demande = NULL,
+                            modification_data = NULL
+                            WHERE idEvent = ?");
+                        $stmt->execute([
+                            $modificationData['nomEvent'],
+                            $modificationData['descriptionEvenement'],
+                            $modificationData['categorie'],
+                            $modificationData['lieu'],
+                            $modificationData['places'],
+                            $modificationData['dateDepart'],
+                            $modificationData['heureDepart'],
+                            $modificationData['dateFin'],
+                            $modificationData['heureFin'],
+                            $modificationData['image'],
+                            $event_id
+                        ]);
+                        
+                        $message = "Modification approuvée et appliquée avec succès !";
+                    }
                 } elseif ($action === 'rejeter_modification') {
-                    // Just update the request status and restore event to Disponible
-                    $stmt = $conn->prepare("UPDATE demandes_modifications SET status = 'Rejeté' WHERE id = ?");
-                    $stmt->execute([$modification_id]);
-                    
-                    $stmt = $conn->prepare("UPDATE evenements SET status = 'Disponible' WHERE idEvent = ?");
-                    $stmt->execute([$modification['evenement_id']]);
+                    // Clear modification request and restore to Disponible
+                    $stmt = $conn->prepare("UPDATE evenements SET status = 'Disponible', motif_demande = NULL, modification_data = NULL WHERE idEvent = ?");
+                    $stmt->execute([$event_id]);
                     
                     $message = "Demande de modification rejetée.";
                 }
@@ -74,29 +85,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         
         // Handle cancellation requests
-        if (isset($_POST['annulation_id']) && in_array($action, ['approuver_annulation', 'rejeter_annulation'])) {
-            $annulation_id = $_POST['annulation_id'];
+        if (isset($_POST['event_id']) && in_array($action, ['approuver_annulation', 'rejeter_annulation'])) {
+            $event_id = $_POST['event_id'];
             
-            // Get cancellation details
-            $stmt = $conn->prepare("SELECT * FROM demandes_annulations WHERE id = ?");
-            $stmt->execute([$annulation_id]);
-            $annulation = $stmt->fetch(PDO::FETCH_ASSOC);
+            // Get event details
+            $stmt = $conn->prepare("SELECT * FROM evenements WHERE idEvent = ?");
+            $stmt->execute([$event_id]);
+            $event = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($annulation) {
+            if ($event && $event['status'] === 'Annulation demandée') {
                 if ($action === 'approuver_annulation') {
                     // Cancel the event
-                    $stmt = $conn->prepare("UPDATE evenements SET status = 'Annulé' WHERE idEvent = ?");
-                    $stmt->execute([$annulation['evenement_id']]);
-                    
-                    // Update cancellation request status
-                    $stmt = $conn->prepare("UPDATE demandes_annulations SET status = 'Approuvé' WHERE id = ?");
-                    $stmt->execute([$annulation_id]);
+                    $stmt = $conn->prepare("UPDATE evenements SET status = 'Annulé', motif_demande = NULL WHERE idEvent = ?");
+                    $stmt->execute([$event_id]);
                     
                     $message = "Demande d'annulation approuvée. L'événement a été annulé.";
                 } elseif ($action === 'rejeter_annulation') {
-                    // Just update the request status
-                    $stmt = $conn->prepare("UPDATE demandes_annulations SET status = 'Rejeté' WHERE id = ?");
-                    $stmt->execute([$annulation_id]);
+                    // Restore event to Disponible
+                    $stmt = $conn->prepare("UPDATE evenements SET status = 'Disponible', motif_demande = NULL WHERE idEvent = ?");
+                    $stmt->execute([$event_id]);
                     
                     $message = "Demande d'annulation rejetée.";
                 }
@@ -125,13 +132,12 @@ function fetchPendingEvents($conn) {
 
 // Récupérer les demandes de modification en attente
 function fetchModificationRequests($conn) {
-    $stmt = $conn->prepare("SELECT dm.*, e.nomEvent as event_original_name, o.clubNom, u.email as organisateur_email 
-        FROM demandes_modifications dm 
-        JOIN evenements e ON dm.evenement_id = e.idEvent 
-        JOIN organisateur o ON dm.organisateur_id = o.id 
+    $stmt = $conn->prepare("SELECT e.*, o.clubNom, u.email as organisateur_email 
+        FROM evenements e 
+        JOIN organisateur o ON e.organisateur_id = o.id 
         JOIN utilisateurs u ON o.id = u.id 
-        WHERE dm.status = 'En attente' 
-        ORDER BY dm.date_demande DESC
+        WHERE e.status = 'Modification demandée' 
+        ORDER BY e.idEvent DESC
     ");
     $stmt->execute();
     return $stmt->fetchAll();
@@ -139,13 +145,12 @@ function fetchModificationRequests($conn) {
 
 // Récupérer les demandes d'annulation en attente
 function fetchCancellationRequests($conn) {
-    $stmt = $conn->prepare("SELECT da.*, e.nomEvent, e.dateDepart, e.dateFin, e.lieu, e.places, o.clubNom, u.email as organisateur_email 
-        FROM demandes_annulations da 
-        JOIN evenements e ON da.evenement_id = e.idEvent 
-        JOIN organisateur o ON da.organisateur_id = o.id 
+    $stmt = $conn->prepare("SELECT e.*, o.clubNom, u.email as organisateur_email 
+        FROM evenements e 
+        JOIN organisateur o ON e.organisateur_id = o.id 
         JOIN utilisateurs u ON o.id = u.id 
-        WHERE da.status = 'En attente' 
-        ORDER BY da.date_demande DESC
+        WHERE e.status = 'Annulation demandée' 
+        ORDER BY e.idEvent DESC
     ");
     $stmt->execute();
     return $stmt->fetchAll();
@@ -556,12 +561,16 @@ $message = $_GET['message'] ?? '';
             </div>
         <?php else: ?>
             <div class="events-list">
-                <?php foreach ($modification_requests as $modif): ?>
+                <?php foreach ($modification_requests as $modif): 
+                    $modifData = json_decode($modif['modification_data'], true);
+                ?>
                 <div class="event-card">
                     <div class="event-card-inner">
                         <div class="event-image" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);">
-                            <?php if (!empty($modif['image']) && file_exists('../' . $modif['image'])): ?>
-                                <img src="../<?= htmlspecialchars($modif['image']) ?>" alt="<?= htmlspecialchars($modif['nomEvent']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                            <?php 
+                            $newImage = $modifData['image'] ?? $modif['image'];
+                            if (!empty($newImage) && file_exists('../' . $newImage)): ?>
+                                <img src="../<?= htmlspecialchars($newImage) ?>" alt="<?= htmlspecialchars($modifData['nomEvent'] ?? $modif['nomEvent']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
                             <?php else: ?>
                                 <div class="event-icon"><i class="bi bi-pencil-square"></i></div>
                             <?php endif; ?>
@@ -571,42 +580,42 @@ $message = $_GET['message'] ?? '';
                             <div>
                                 <div class="event-header">
                                     <div>
-                                        <h3 class="event-title"><?= htmlspecialchars($modif['nomEvent']) ?></h3>
-                                        <small style="color: #6c757d;">Événement original: <?= htmlspecialchars($modif['event_original_name']) ?></small>
+                                        <h3 class="event-title"><?= htmlspecialchars($modifData['nomEvent'] ?? '') ?></h3>
+                                        <small style="color: #6c757d;">Événement original: <?= htmlspecialchars($modif['nomEvent']) ?></small>
                                     </div>
                                     <span class="event-status" style="background: #fff3cd; color: #856404;">MODIFICATION</span>
                                 </div>
                                 
                                 <div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0;">
-                                    <strong><i class="bi bi-info-circle"></i> Motif:</strong> <?= htmlspecialchars($modif['motif']) ?>
+                                    <strong><i class="bi bi-info-circle"></i> Motif:</strong> <?= htmlspecialchars($modif['motif_demande']) ?>
                                 </div>
                                 
-                                <p class="event-description"><?= htmlspecialchars($modif['descriptionEvenement']) ?></p>
+                                <p class="event-description"><?= htmlspecialchars($modifData['descriptionEvenement'] ?? '') ?></p>
                                 
                                 <div class="event-info">
                                     <div class="info-item">
                                         <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
                                         </svg>
-                                        <?= htmlspecialchars($modif['lieu']) ?>
+                                        <?= htmlspecialchars($modifData['lieu'] ?? '') ?>
                                     </div>
                                     <div class="info-item">
                                         <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
                                         </svg>
-                                        <?= $modif['places'] ? htmlspecialchars($modif['places']) . ' places' : 'Places illimitées' ?>
+                                        <?= ($modifData['places'] ?? null) ? htmlspecialchars($modifData['places']) . ' places' : 'Places illimitées' ?>
                                     </div>
                                     <div class="info-item">
                                         <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
                                         </svg>
-                                        <?= htmlspecialchars($modif['dateDepart']) ?> à <?= htmlspecialchars($modif['heureDepart']) ?>
+                                        <?= htmlspecialchars($modifData['dateDepart'] ?? '') ?> à <?= htmlspecialchars($modifData['heureDepart'] ?? '') ?>
                                     </div>
                                     <div class="info-item">
                                         <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
                                         </svg>
-                                        Fin: <?= htmlspecialchars($modif['dateFin']) ?> à <?= htmlspecialchars($modif['heureFin']) ?>
+                                        Fin: <?= htmlspecialchars($modifData['dateFin'] ?? '') ?> à <?= htmlspecialchars($modifData['heureFin'] ?? '') ?>
                                     </div>
                                     <div class="info-item">
                                         <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
@@ -625,7 +634,7 @@ $message = $_GET['message'] ?? '';
                             
                             <div class="event-actions">
                                 <form method="POST" style="display: inline;">
-                                    <input type="hidden" name="modification_id" value="<?= $modif['id'] ?>">
+                                    <input type="hidden" name="event_id" value="<?= $modif['idEvent'] ?>">
                                     <input type="hidden" name="action" value="approuver_modification">
                                     <button type="submit" class="btn-validate" onclick="return confirm('Approuver cette modification ? Les changements seront appliqués à l\'événement.')">
                                         <i class="bi bi-check-circle-fill me-1"></i>Approuver
@@ -633,7 +642,7 @@ $message = $_GET['message'] ?? '';
                                 </form>
                                 
                                 <form method="POST" style="display: inline;">
-                                    <input type="hidden" name="modification_id" value="<?= $modif['id'] ?>">
+                                    <input type="hidden" name="event_id" value="<?= $modif['idEvent'] ?>">
                                     <input type="hidden" name="action" value="rejeter_modification">
                                     <button type="submit" class="btn-reject" onclick="return confirm('Rejeter cette demande de modification ?')">
                                         <i class="bi bi-x-circle-fill me-1"></i>Rejeter
@@ -674,7 +683,7 @@ $message = $_GET['message'] ?? '';
                                 
                                 <div style="background: #f8d7da; padding: 10px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #dc3545;">
                                     <strong><i class="bi bi-exclamation-triangle"></i> Motif d'annulation:</strong><br>
-                                    <?= htmlspecialchars($cancel['motif']) ?>
+                                    <?= htmlspecialchars($cancel['motif_demande']) ?>
                                 </div>
                                 
                                 <div class="event-info">
@@ -708,18 +717,12 @@ $message = $_GET['message'] ?? '';
                                         </svg>
                                         <?= htmlspecialchars($cancel['organisateur_email']) ?>
                                     </div>
-                                    <div class="info-item">
-                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        Demandé le: <?= date('d/m/Y H:i', strtotime($cancel['date_demande'])) ?>
-                                    </div>
                                 </div>
                             </div>
                             
                             <div class="event-actions">
                                 <form method="POST" style="display: inline;">
-                                    <input type="hidden" name="annulation_id" value="<?= $cancel['id'] ?>">
+                                    <input type="hidden" name="event_id" value="<?= $cancel['idEvent'] ?>">
                                     <input type="hidden" name="action" value="approuver_annulation">
                                     <button type="submit" class="btn-validate" onclick="return confirm('Approuver cette annulation ? L\'événement sera marqué comme Annulé.')">
                                         <i class="bi bi-check-circle-fill me-1"></i>Approuver
@@ -727,7 +730,7 @@ $message = $_GET['message'] ?? '';
                                 </form>
                                 
                                 <form method="POST" style="display: inline;">
-                                    <input type="hidden" name="annulation_id" value="<?= $cancel['id'] ?>">
+                                    <input type="hidden" name="event_id" value="<?= $cancel['idEvent'] ?>">
                                     <input type="hidden" name="action" value="rejeter_annulation">
                                     <button type="submit" class="btn-reject" onclick="return confirm('Rejeter cette demande d\'annulation ?')">
                                         <i class="bi bi-x-circle-fill me-1"></i>Rejeter

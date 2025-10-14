@@ -101,35 +101,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // Store modification request in demandes_modifications table
-        // First, check if table exists, if not create it
-        $conn->exec("CREATE TABLE IF NOT EXISTS demandes_modifications (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            evenement_id INT NOT NULL,
-            organisateur_id INT NOT NULL,
-            nomEvent VARCHAR(255),
-            descriptionEvenement TEXT,
-            categorie VARCHAR(100),
-            lieu VARCHAR(255),
-            places INT NULL,
-            dateDepart DATE,
-            heureDepart TIME,
-            dateFin DATE,
-            heureFin TIME,
-            image VARCHAR(255),
-            motif TEXT,
-            status ENUM('En attente', 'Approuvé', 'Rejeté') DEFAULT 'En attente',
-            date_demande TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (evenement_id) REFERENCES evenements(idEvent) ON DELETE CASCADE
-        )");
+        // Store modification data as JSON
+        $modificationData = json_encode([
+            'nomEvent' => $nomEvent,
+            'descriptionEvenement' => $descriptionEvenement,
+            'categorie' => $categorie,
+            'lieu' => $lieu,
+            'places' => $places,
+            'dateDepart' => $dateDepart,
+            'heureDepart' => $heureDepart,
+            'dateFin' => $dateFin,
+            'heureFin' => $heureFin,
+            'image' => $imagePath
+        ]);
         
-        // Set event status to "En attente" when modification request is submitted
-        $stmtStatus = $conn->prepare("UPDATE evenements SET status = 'En attente' WHERE idEvent = ?");
-        $stmtStatus->execute([$eventId]);
-        
-        // Insert modification request
-        $stmt = $conn->prepare("INSERT INTO demandes_modifications (evenement_id, organisateur_id, nomEvent, descriptionEvenement, categorie, lieu, places, dateDepart, heureDepart, dateFin, heureFin, image, motif) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$eventId, $_SESSION['id'], $nomEvent, $descriptionEvenement, $categorie, $lieu, $places, $dateDepart, $heureDepart, $dateFin, $heureFin, $imagePath, $motif]);
+        // Update event with modification request
+        $stmt = $conn->prepare("UPDATE evenements SET status = 'Modification demandée', motif_demande = ?, modification_data = ? WHERE idEvent = ?");
+        $stmt->execute([$motif, $modificationData, $eventId]);
         
         $_SESSION['success_message'] = "Demande de modification envoyée avec succès ! Elle sera examinée par l'administrateur.";
         header("Location: evenements_clubs.php");
