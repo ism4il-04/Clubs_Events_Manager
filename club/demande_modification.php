@@ -7,6 +7,32 @@ if (!isset($_SESSION['email'])) {
 
 require_once "../includes/db.php";
 include "../includes/header.php";
+
+// Get event ID
+$eventId = $_GET['id'] ?? null;
+
+if (!$eventId) {
+    header("Location: evenements_clubs.php");
+    exit();
+}
+
+// Fetch event details
+$stmt = $conn->prepare("SELECT * FROM evenements WHERE idEvent = ? AND organisateur_id = ?");
+$stmt->execute([$eventId, $_SESSION['id']]);
+$event = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$event) {
+    header("Location: evenements_clubs.php");
+    exit();
+}
+
+// Check if event is Disponible or Sold out
+if (!in_array($event['status'], ['Disponible', 'Sold out'])) {
+    $_SESSION['error_message'] = "Cet événement ne nécessite pas de demande de modification.";
+    header("Location: evenements_clubs.php");
+    exit();
+}
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
@@ -20,11 +46,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $heureDepart = $_POST['heureDepart'];
         $dateFin = $_POST['dateFin'];
         $heureFin = $_POST['heureFin'];
+        $motif = $_POST['motif'];
         
         // Validate required fields
         if (empty($nomEvent) || empty($descriptionEvenement) || empty($lieu) || 
             empty($dateDepart) || empty($heureDepart) || 
-            empty($dateFin) || empty($heureFin)) {
+            empty($dateFin) || empty($heureFin) || empty($motif)) {
             throw new Exception("Tous les champs sont obligatoires.");
         }
         
@@ -42,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // Handle image upload
-        $imagePath = null;
+        $imagePath = $event['image']; // Keep existing image by default
         if (isset($_FILES['eventImage']) && $_FILES['eventImage']['error'] === UPLOAD_ERR_OK) {
             $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
             $maxFileSize = 5 * 1024 * 1024; // 5MB
@@ -74,11 +101,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // Insert event into database
-        $stmt = $conn->prepare("INSERT INTO evenements (nomEvent, descriptionEvenement, categorie, lieu, places, dateDepart, heureDepart, dateFin, heureFin, image, status, organisateur_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'En attente', ?)");
-        $stmt->execute([$nomEvent, $descriptionEvenement, $categorie, $lieu, $places, $dateDepart, $heureDepart, $dateFin, $heureFin, $imagePath, $_SESSION['id']]);
+        // Store modification request in demandes_modifications table
+        // First, check if table exists, if not create it
+        $conn->exec("CREATE TABLE IF NOT EXISTS demandes_modifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            evenement_id INT NOT NULL,
+            organisateur_id INT NOT NULL,
+            nomEvent VARCHAR(255),
+            descriptionEvenement TEXT,
+            categorie VARCHAR(100),
+            lieu VARCHAR(255),
+            places INT NULL,
+            dateDepart DATE,
+            heureDepart TIME,
+            dateFin DATE,
+            heureFin TIME,
+            image VARCHAR(255),
+            motif TEXT,
+            status ENUM('En attente', 'Approuvé', 'Rejeté') DEFAULT 'En attente',
+            date_demande TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (evenement_id) REFERENCES evenements(idEvent) ON DELETE CASCADE
+        )");
         
-        $success_message = "Événement créé avec succès ! Il est en attente d'approbation.";
+        // Set event status to "En attente" when modification request is submitted
+        $stmtStatus = $conn->prepare("UPDATE evenements SET status = 'En attente' WHERE idEvent = ?");
+        $stmtStatus->execute([$eventId]);
+        
+        // Insert modification request
+        $stmt = $conn->prepare("INSERT INTO demandes_modifications (evenement_id, organisateur_id, nomEvent, descriptionEvenement, categorie, lieu, places, dateDepart, heureDepart, dateFin, heureFin, image, motif) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$eventId, $_SESSION['id'], $nomEvent, $descriptionEvenement, $categorie, $lieu, $places, $dateDepart, $heureDepart, $dateFin, $heureFin, $imagePath, $motif]);
+        
+        $_SESSION['success_message'] = "Demande de modification envoyée avec succès ! Elle sera examinée par l'administrateur.";
+        header("Location: evenements_clubs.php");
+        exit();
         
     } catch (Exception $e) {
         $error_message = $e->getMessage();
@@ -94,12 +149,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="icon" type="image/png" sizes="16x16" href="../pigeon2-removebg-preview.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
-    <title>Ajouter un événement</title>
+    <title>Demande de modification</title>
     <link rel="stylesheet" href="../includes/style.css">
     <link rel="stylesheet" href="../includes/style2.css">
     <link rel="stylesheet" href="../includes/style3.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../includes/script.js"></script>
@@ -129,10 +183,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin: 0;
         }
         
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: #856404;
+        }
+        
+        .warning-box i {
+            margin-right: 0.5rem;
+        }
+        
         .form-group {
             margin-bottom: 1.5rem;
-            display: grid;
-            align-items: center;
         }
         
         .form-label {
@@ -151,8 +216,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .form-control:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            border-color: #ffc107;
+            box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
         }
         
         .form-text {
@@ -162,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .btn-submit {
-            background: linear-gradient(135deg, #007bff, #0056b3);
+            background: linear-gradient(135deg, #ffc107, #ff9800);
             border: none;
             color: white;
             padding: 0.75rem 2rem;
@@ -170,12 +235,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 1.1rem;
             font-weight: 600;
             transition: transform 0.2s ease;
-            /* width: 100%; */
         }
         
         .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
         }
         
         .btn-cancel {
@@ -186,9 +250,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 8px;
             font-size: 1.1rem;
             font-weight: 600;
-            text-align: center;
+            text-decoration: none;
+            display: inline-block;
             transition: background-color 0.3s ease;
-            /* width: 100%; */
             margin-top: 1rem;
         }
         
@@ -201,12 +265,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 8px;
             padding: 1rem;
             margin-bottom: 1.5rem;
-        }
-        
-        .alert-success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
         }
         
         .alert-danger {
@@ -224,6 +282,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flex: 1;
         }
         
+        .current-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            margin-bottom: 10px;
+        }
+        
         @media (max-width: 768px) {
             .datetime-row {
                 flex-direction: column;
@@ -236,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="tabs">
         <div class="tab" onclick="navigateTo('dashboard.php')">Tableau de bord</div>
         <div class="tab" onclick="navigateTo('evenements_clubs.php')">Mes événements</div>
-        <div class="tab active" onclick="navigateTo('ajouter_evenement.php')">Ajouter un événement</div>
+        <div class="tab" onclick="navigateTo('ajouter_evenement.php')">Ajouter un événement</div>
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
         <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
@@ -244,15 +310,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="form-container">
         <div class="form-header">
-            <h1><i class="bi bi-calendar-event me-2"></i>Créer un nouvel événement</h1>
-            <p>Remplissez les informations ci-dessous pour créer votre événement</p>
+            <h1><i class="bi bi-exclamation-triangle me-2"></i>Demande de modification</h1>
+            <p>Soumettez une demande de modification pour votre événement</p>
         </div>
 
-        <?php if (isset($success_message)): ?>
-            <div class="alert alert-success">
-                <strong><i class="bi bi-check-circle-fill me-1"></i>Succès !</strong> <?= htmlspecialchars($success_message) ?>
-            </div>
-        <?php endif; ?>
+        <div class="warning-box">
+            <i class="bi bi-info-circle-fill"></i>
+            <strong>Important :</strong> Votre événement est actuellement <strong><?= htmlspecialchars($event['status']) ?></strong>. 
+            Toute modification nécessite l'approbation de l'administrateur avant d'être appliquée.
+        </div>
 
         <?php if (isset($error_message)): ?>
             <div class="alert alert-danger">
@@ -266,8 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label for="nomEvent" class="form-label">Nom de l'événement *</label>
                         <input type="text" class="form-control" id="nomEvent" name="nomEvent" 
-                               value="<?= htmlspecialchars($_POST['nomEvent'] ?? '') ?>" required>
-                        <small class="form-text">Donnez un nom attractif à votre événement</small>
+                               value="<?= htmlspecialchars($_POST['nomEvent'] ?? $event['nomEvent']) ?>" required>
                     </div>
                 </div>
             </div>
@@ -277,8 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label for="descriptionEvenement" class="form-label">Description *</label>
                         <textarea class="form-control" id="descriptionEvenement" name="descriptionEvenement" 
-                                  rows="4" required><?= htmlspecialchars($_POST['descriptionEvenement'] ?? '') ?></textarea>
-                        <small class="form-text">Décrivez votre événement en détail</small>
+                                  rows="4" required><?= htmlspecialchars($_POST['descriptionEvenement'] ?? $event['descriptionEvenement']) ?></textarea>
                     </div>
                 </div>
             </div>
@@ -288,20 +352,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label for="categorie" class="form-label">Catégorie *</label>
                         <select class="form-control" id="categorie" name="categorie" required>
-                            <option value="">-- Sélectionnez une catégorie --</option>
-                            <option value="Conférence" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Conférence') ? 'selected' : '' ?>>Conférence</option>
-                            <option value="Atelier" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Atelier') ? 'selected' : '' ?>>Atelier</option>
-                            <option value="Formation" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Formation') ? 'selected' : '' ?>>Formation</option>
-                            <option value="Sortie Pédagogique" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Sortie Pédagogique') ? 'selected' : '' ?>>Sortie Pédagogique</option>
-                            <option value="Sportif" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Sportif') ? 'selected' : '' ?>>Sportif</option>
-                            <option value="Hackathon" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Hackathon') ? 'selected' : '' ?>>Hackathon</option>
-                            <option value="Séminaire" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Séminaire') ? 'selected' : '' ?>>Séminaire</option>
-                            <option value="Table ronde/ Débat" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Table ronde/ Débat') ? 'selected' : '' ?>>Table ronde/ Débat</option>
-                            <option value="Sortie" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Sortie') ? 'selected' : '' ?>>Sortie</option>
-                            <option value="Compétition" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Compétition') ? 'selected' : '' ?>>Compétition</option>
-                            <option value="Autre" <?= (isset($_POST['categorie']) && $_POST['categorie'] == 'Autre') ? 'selected' : '' ?>>Autre</option>
+                            <?php
+                            $categories = ['Conférence', 'Atelier', 'Formation', 'Sortie Pédagogique', 'Sportif', 'Hackathon', 'Séminaire', 'Table ronde/ Débat', 'Sortie', 'Compétition', 'Autre'];
+                            $selectedCategorie = $_POST['categorie'] ?? $event['categorie'];
+                            foreach ($categories as $cat): ?>
+                                <option value="<?= $cat ?>" <?= ($selectedCategorie == $cat) ? 'selected' : '' ?>><?= $cat ?></option>
+                            <?php endforeach; ?>
                         </select>
-                        <small class="form-text">Choisissez la catégorie qui correspond le mieux à votre événement</small>
                     </div>
                 </div>
             </div>
@@ -310,8 +367,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="col-md-12">
                     <div class="form-group">
                         <label for="eventImage" class="form-label">Image de l'événement</label>
+                        <?php if (!empty($event['image']) && file_exists('../' . $event['image'])): ?>
+                            <div>
+                                <img src="../<?= htmlspecialchars($event['image']) ?>" alt="Image actuelle" class="current-image">
+                                <p class="form-text">Image actuelle</p>
+                            </div>
+                        <?php endif; ?>
                         <input type="file" class="form-control" id="eventImage" name="eventImage" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
-                        <small class="form-text">Format accepté : JPG, PNG, GIF, WEBP. Taille max : 5MB (Optionnel)</small>
+                        <small class="form-text">Laissez vide pour conserver l'image actuelle</small>
                         <div id="imagePreview" style="margin-top: 10px; display: none;">
                             <img id="previewImg" src="" alt="Aperçu" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid #e9ecef;">
                         </div>
@@ -324,23 +387,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label for="lieu" class="form-label">Lieu *</label>
                         <input type="text" class="form-control" id="lieu" name="lieu" 
-                               value="<?= htmlspecialchars($_POST['lieu'] ?? '') ?>" required>
-                        <small class="form-text">Ex: Amphithéâtre A, Salle de conférence, etc.</small>
+                               value="<?= htmlspecialchars($_POST['lieu'] ?? $event['lieu']) ?>" required>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
                         <label for="places" class="form-label">Nombre de places</label>
                         <input type="number" class="form-control" id="places" name="places" 
-                               value="<?= htmlspecialchars($_POST['places'] ?? '') ?>" min="1">
+                               value="<?= htmlspecialchars($_POST['places'] ?? $event['places']) ?>" min="1">
                         <div class="form-check mt-2">
                             <input class="form-check-input" type="checkbox" id="placesIllimitees" 
-                                   name="placesIllimitees" <?= isset($_POST['placesIllimitees']) ? 'checked' : '' ?>>
+                                   name="placesIllimitees" <?= (isset($_POST['placesIllimitees']) || empty($event['places'])) ? 'checked' : '' ?>>
                             <label class="form-check-label" for="placesIllimitees">
-                                Places illimitées / non contrôlées
+                                Places illimitées
                             </label>
                         </div>
-                        <small class="form-text">Capacité maximale ou cochez si illimité</small>
                     </div>
                 </div>
             </div>
@@ -349,12 +410,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label for="dateDepart" class="form-label">Date de début *</label>
                     <input type="date" class="form-control" id="dateDepart" name="dateDepart" 
-                           value="<?= htmlspecialchars($_POST['dateDepart'] ?? '') ?>" required>
+                           value="<?= htmlspecialchars($_POST['dateDepart'] ?? $event['dateDepart']) ?>" required>
                 </div>
                 <div class="form-group">
                     <label for="heureDepart" class="form-label">Heure de début *</label>
                     <input type="time" class="form-control" id="heureDepart" name="heureDepart" 
-                           value="<?= htmlspecialchars($_POST['heureDepart'] ?? '') ?>" required>
+                           value="<?= htmlspecialchars($_POST['heureDepart'] ?? $event['heureDepart']) ?>" required>
                 </div>
             </div>
 
@@ -362,18 +423,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label for="dateFin" class="form-label">Date de fin *</label>
                     <input type="date" class="form-control" id="dateFin" name="dateFin" 
-                           value="<?= htmlspecialchars($_POST['dateFin'] ?? '') ?>" required>
+                           value="<?= htmlspecialchars($_POST['dateFin'] ?? $event['dateFin']) ?>" required>
                 </div>
                 <div class="form-group">
                     <label for="heureFin" class="form-label">Heure de fin *</label>
                     <input type="time" class="form-control" id="heureFin" name="heureFin" 
-                           value="<?= htmlspecialchars($_POST['heureFin'] ?? '') ?>" required>
+                           value="<?= htmlspecialchars($_POST['heureFin'] ?? $event['heureFin']) ?>" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="motif" class="form-label">Motif de la modification *</label>
+                        <textarea class="form-control" id="motif" name="motif" rows="3" required 
+                                  placeholder="Expliquez pourquoi vous souhaitez modifier cet événement..."><?= htmlspecialchars($_POST['motif'] ?? '') ?></textarea>
+                        <small class="form-text">Ce motif sera examiné par l'administrateur</small>
+                    </div>
                 </div>
             </div>
 
             <div class="form-group">
                 <button type="submit" class="btn-submit">
-                    </i>Créer l'événement
+                    <i class="bi bi-send me-1"></i>Envoyer la demande
                 </button>
                 <a href="evenements_clubs.php" class="btn-cancel">
                     <i class="bi bi-x-circle me-1"></i>Annuler
@@ -383,58 +455,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
-        // Form validation
         document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('form');
-            const dateDepart = document.getElementById('dateDepart');
-            const dateFin = document.getElementById('dateFin');
-            const heureDepart = document.getElementById('heureDepart');
-            const heureFin = document.getElementById('heureFin');
             const placesInput = document.getElementById('places');
             const placesIllimiteesCheckbox = document.getElementById('placesIllimitees');
             const imageInput = document.getElementById('eventImage');
             const imagePreview = document.getElementById('imagePreview');
             const previewImg = document.getElementById('previewImg');
 
-            // Image preview functionality
+            // Image preview
             imageInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    // Validate file size
                     if (file.size > 5 * 1024 * 1024) {
-                        alert('Le fichier est trop volumineux. Taille maximale : 5MB');
+                        alert('Fichier trop volumineux. Max: 5MB');
                         imageInput.value = '';
                         imagePreview.style.display = 'none';
                         return;
                     }
-                    
-                    // Validate file type
-                    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-                    if (!allowedTypes.includes(file.type)) {
-                        alert('Type de fichier non autorisé. Utilisez JPG, PNG, GIF ou WEBP.');
-                        imageInput.value = '';
-                        imagePreview.style.display = 'none';
-                        return;
-                    }
-                    
-                    // Show preview
                     const reader = new FileReader();
                     reader.onload = function(event) {
                         previewImg.src = event.target.result;
                         imagePreview.style.display = 'block';
                     };
                     reader.readAsDataURL(file);
-                } else {
-                    imagePreview.style.display = 'none';
                 }
             });
 
-            // Set minimum date to today
-            const today = new Date().toISOString().split('T')[0];
-            dateDepart.min = today;
-            dateFin.min = today;
-
-            // Handle unlimited places checkbox
+            // Handle unlimited places
             function togglePlacesInput() {
                 if (placesIllimiteesCheckbox.checked) {
                     placesInput.value = '';
@@ -447,73 +494,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     placesInput.style.backgroundColor = '';
                 }
             }
-
-            // Initialize places input state
             togglePlacesInput();
-
-            // Add event listener to checkbox
             placesIllimiteesCheckbox.addEventListener('change', togglePlacesInput);
-
-            // Update dateFin minimum when dateDepart changes
-            dateDepart.addEventListener('change', function() {
-                dateFin.min = this.value;
-                if (dateFin.value && dateFin.value < this.value) {
-                    dateFin.value = this.value;
-                }
-            });
-
-            // Validate date and time combination
-            function validateDateTime() {
-                if (dateDepart.value && dateFin.value && heureDepart.value && heureFin.value) {
-                    const startDateTime = new Date(dateDepart.value + 'T' + heureDepart.value);
-                    const endDateTime = new Date(dateFin.value + 'T' + heureFin.value);
-                    
-                    if (endDateTime <= startDateTime) {
-                        heureFin.setCustomValidity('L\'heure de fin doit être postérieure à l\'heure de début');
-                    } else {
-                        heureFin.setCustomValidity('');
-                    }
-                }
-            }
-
-            dateDepart.addEventListener('change', validateDateTime);
-            dateFin.addEventListener('change', validateDateTime);
-            heureDepart.addEventListener('change', validateDateTime);
-            heureFin.addEventListener('change', validateDateTime);
-
-            // Form submission validation
-            form.addEventListener('submit', function(e) {
-                const requiredFields = ['nomEvent', 'descriptionEvenement', 'categorie', 'lieu', 'dateDepart', 'heureDepart', 'dateFin', 'heureFin'];
-                let isValid = true;
-
-                requiredFields.forEach(fieldName => {
-                    const field = document.getElementById(fieldName);
-                    if (!field.value.trim()) {
-                        field.style.borderColor = '#dc3545';
-                        isValid = false;
-                    } else {
-                        field.style.borderColor = '#e9ecef';
-                    }
-                });
-
-                // Validate places if not unlimited
-                if (!placesIllimiteesCheckbox.checked) {
-                    if (!placesInput.value || placesInput.value < 1) {
-                        placesInput.style.borderColor = '#dc3545';
-                        isValid = false;
-                    } else {
-                        placesInput.style.borderColor = '#e9ecef';
-                    }
-                }
-
-                validateDateTime();
-
-                if (!isValid) {
-                    e.preventDefault();
-                    alert('Veuillez remplir tous les champs obligatoires.');
-                }
-            });
         });
     </script>
 </body>
 </html>
+

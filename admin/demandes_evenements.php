@@ -8,26 +8,105 @@ if (!isset($_SESSION['email'])) {
 require_once "../includes/db.php";
 
 // Traitement des actions de validation/rejet
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_POST['event_id'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
-    $event_id = $_POST['event_id'];
     $admin_id = $_SESSION['id'];
     
     try {
-        if ($action === 'valider') {
-            $stmt = $conn->prepare("UPDATE evenements SET status = 'Disponible', admin_id = ?, date_validation = NOW() WHERE idEvent = ?");
-            $stmt->execute([$admin_id, $event_id]);
-            $message = "Événement validé avec succès !";
-        } elseif ($action === 'refuser') {
-            $stmt = $conn->prepare("UPDATE evenements SET status = 'Rejeté', admin_id = ?, date_validation = NOW() WHERE idEvent = ?");
-            $stmt->execute([$admin_id, $event_id]);
-            $message = "Événement refusé.";
+        // Handle new event validation/rejection
+        if (isset($_POST['event_id']) && in_array($action, ['valider', 'refuser'])) {
+            $event_id = $_POST['event_id'];
+            
+            if ($action === 'valider') {
+                $stmt = $conn->prepare("UPDATE evenements SET status = 'Disponible', admin_id = ?, date_validation = NOW() WHERE idEvent = ?");
+                $stmt->execute([$admin_id, $event_id]);
+                $message = "Événement validé avec succès !";
+            } elseif ($action === 'refuser') {
+                $stmt = $conn->prepare("UPDATE evenements SET status = 'Rejeté', admin_id = ?, date_validation = NOW() WHERE idEvent = ?");
+                $stmt->execute([$admin_id, $event_id]);
+                $message = "Événement refusé.";
+            }
+        }
+        
+        // Handle modification requests
+        if (isset($_POST['modification_id']) && in_array($action, ['approuver_modification', 'rejeter_modification'])) {
+            $modification_id = $_POST['modification_id'];
+            
+            // Get modification details
+            $stmt = $conn->prepare("SELECT * FROM demandes_modifications WHERE id = ?");
+            $stmt->execute([$modification_id]);
+            $modification = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($modification) {
+                if ($action === 'approuver_modification') {
+                    // Apply modifications to the event
+                    $stmt = $conn->prepare("UPDATE evenements SET nomEvent = ?, descriptionEvenement = ?, categorie = ?, lieu = ?, places = ?, dateDepart = ?, heureDepart = ?, dateFin = ?, heureFin = ?, image = ?, status = 'Disponible' WHERE idEvent = ?");
+                    $stmt->execute([
+                        $modification['nomEvent'],
+                        $modification['descriptionEvenement'],
+                        $modification['categorie'],
+                        $modification['lieu'],
+                        $modification['places'],
+                        $modification['dateDepart'],
+                        $modification['heureDepart'],
+                        $modification['dateFin'],
+                        $modification['heureFin'],
+                        $modification['image'],
+                        $modification['evenement_id']
+                    ]);
+                    
+                    // Update modification request status
+                    $stmt = $conn->prepare("UPDATE demandes_modifications SET status = 'Approuvé' WHERE id = ?");
+                    $stmt->execute([$modification_id]);
+                    
+                    $message = "Modification approuvée et appliquée avec succès !";
+                } elseif ($action === 'rejeter_modification') {
+                    // Just update the request status and restore event to Disponible
+                    $stmt = $conn->prepare("UPDATE demandes_modifications SET status = 'Rejeté' WHERE id = ?");
+                    $stmt->execute([$modification_id]);
+                    
+                    $stmt = $conn->prepare("UPDATE evenements SET status = 'Disponible' WHERE idEvent = ?");
+                    $stmt->execute([$modification['evenement_id']]);
+                    
+                    $message = "Demande de modification rejetée.";
+                }
+            }
+        }
+        
+        // Handle cancellation requests
+        if (isset($_POST['annulation_id']) && in_array($action, ['approuver_annulation', 'rejeter_annulation'])) {
+            $annulation_id = $_POST['annulation_id'];
+            
+            // Get cancellation details
+            $stmt = $conn->prepare("SELECT * FROM demandes_annulations WHERE id = ?");
+            $stmt->execute([$annulation_id]);
+            $annulation = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($annulation) {
+                if ($action === 'approuver_annulation') {
+                    // Cancel the event
+                    $stmt = $conn->prepare("UPDATE evenements SET status = 'Annulé' WHERE idEvent = ?");
+                    $stmt->execute([$annulation['evenement_id']]);
+                    
+                    // Update cancellation request status
+                    $stmt = $conn->prepare("UPDATE demandes_annulations SET status = 'Approuvé' WHERE id = ?");
+                    $stmt->execute([$annulation_id]);
+                    
+                    $message = "Demande d'annulation approuvée. L'événement a été annulé.";
+                } elseif ($action === 'rejeter_annulation') {
+                    // Just update the request status
+                    $stmt = $conn->prepare("UPDATE demandes_annulations SET status = 'Rejeté' WHERE id = ?");
+                    $stmt->execute([$annulation_id]);
+                    
+                    $message = "Demande d'annulation rejetée.";
+                }
+            }
         }
         
         header("Location: demandes_evenements.php?message=" . urlencode($message));
         exit();
     } catch (Exception $e) {
-        $error = "Erreur lors du traitement de la demande.";
+        $error = "Erreur lors du traitement de la demande: " . $e->getMessage();
     }
 }
 
@@ -44,7 +123,37 @@ function fetchPendingEvents($conn) {
     return $stmt->fetchAll();
 }
 
+// Récupérer les demandes de modification en attente
+function fetchModificationRequests($conn) {
+    $stmt = $conn->prepare("SELECT dm.*, e.nomEvent as event_original_name, o.clubNom, u.email as organisateur_email 
+        FROM demandes_modifications dm 
+        JOIN evenements e ON dm.evenement_id = e.idEvent 
+        JOIN organisateur o ON dm.organisateur_id = o.id 
+        JOIN utilisateurs u ON o.id = u.id 
+        WHERE dm.status = 'En attente' 
+        ORDER BY dm.date_demande DESC
+    ");
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+// Récupérer les demandes d'annulation en attente
+function fetchCancellationRequests($conn) {
+    $stmt = $conn->prepare("SELECT da.*, e.nomEvent, e.dateDepart, e.dateFin, e.lieu, e.places, o.clubNom, u.email as organisateur_email 
+        FROM demandes_annulations da 
+        JOIN evenements e ON da.evenement_id = e.idEvent 
+        JOIN organisateur o ON da.organisateur_id = o.id 
+        JOIN utilisateurs u ON o.id = u.id 
+        WHERE da.status = 'En attente' 
+        ORDER BY da.date_demande DESC
+    ");
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
 $pending_events = fetchPendingEvents($conn);
+$modification_requests = fetchModificationRequests($conn);
+$cancellation_requests = fetchCancellationRequests($conn);
 $message = $_GET['message'] ?? '';
 ?>
 
@@ -234,6 +343,60 @@ $message = $_GET['message'] ?? '';
             color: #6b7280;
             font-size: 0.95rem;
         }
+        
+        .request-tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .request-tab:hover {
+            color: #007bff;
+            background: #f8f9fa;
+        }
+        
+        .request-tab.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+            background: #f0f7ff;
+        }
+        
+        .badge {
+            background: #007bff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-warning {
+            background: #ffc107;
+            color: #856404;
+        }
+        
+        .badge-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .tab-content {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -250,8 +413,8 @@ $message = $_GET['message'] ?? '';
 
 <div class="events-container">
     <div class="events-header">
-        <h2>Demandes d'Événements</h2>
-        <p>Validez ou refusez les événements proposés par les clubs</p>
+        <h2>Gestion des Demandes</h2>
+        <p>Validez ou refusez les demandes des clubs</p>
     </div>
     
     <?php if (!empty($message)): ?>
@@ -266,15 +429,39 @@ $message = $_GET['message'] ?? '';
         </div>
     <?php endif; ?>
     
-    <?php if (empty($pending_events)): ?>
-        <div class="empty-state">
-            <i class="fa-regular fa-calendar-check"></i>
-            <h3>Aucune demande en attente</h3>
-            <p>Tous les événements ont été traités.</p>
-        </div>
-    <?php else: ?>
-        <div class="events-list">
-            <?php foreach ($pending_events as $event): ?>
+    <!-- Request Type Tabs -->
+    <div class="request-tabs" style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #e9ecef;">
+        <button class="request-tab active" onclick="showTab('nouveaux')" id="tab-nouveaux">
+            Nouveaux événements 
+            <?php if (count($pending_events) > 0): ?>
+                <span class="badge"><?= count($pending_events) ?></span>
+            <?php endif; ?>
+        </button>
+        <button class="request-tab" onclick="showTab('modifications')" id="tab-modifications">
+            Demandes de modification 
+            <?php if (count($modification_requests) > 0): ?>
+                <span class="badge badge-warning"><?= count($modification_requests) ?></span>
+            <?php endif; ?>
+        </button>
+        <button class="request-tab" onclick="showTab('annulations')" id="tab-annulations">
+            Demandes d'annulation 
+            <?php if (count($cancellation_requests) > 0): ?>
+                <span class="badge badge-danger"><?= count($cancellation_requests) ?></span>
+            <?php endif; ?>
+        </button>
+    </div>
+    
+    <!-- Nouveaux événements -->
+    <div id="content-nouveaux" class="tab-content">
+        <?php if (empty($pending_events)): ?>
+            <div class="empty-state">
+                <i class="fa-regular fa-calendar-check"></i>
+                <h3>Aucune demande en attente</h3>
+                <p>Tous les nouveaux événements ont été traités.</p>
+            </div>
+        <?php else: ?>
+            <div class="events-list">
+                <?php foreach ($pending_events as $event): ?>
                 <div class="event-card">
                     <div class="event-card-inner">
                         <div class="event-image">
@@ -354,14 +541,227 @@ $message = $_GET['message'] ?? '';
                         </div>
                     </div>
                 </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Demandes de modification -->
+    <div id="content-modifications" class="tab-content" style="display: none;">
+        <?php if (empty($modification_requests)): ?>
+            <div class="empty-state">
+                <i class="fa-regular fa-edit"></i>
+                <h3>Aucune demande de modification</h3>
+                <p>Toutes les demandes de modification ont été traitées.</p>
+            </div>
+        <?php else: ?>
+            <div class="events-list">
+                <?php foreach ($modification_requests as $modif): ?>
+                <div class="event-card">
+                    <div class="event-card-inner">
+                        <div class="event-image" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);">
+                            <?php if (!empty($modif['image']) && file_exists('../' . $modif['image'])): ?>
+                                <img src="../<?= htmlspecialchars($modif['image']) ?>" alt="<?= htmlspecialchars($modif['nomEvent']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                            <?php else: ?>
+                                <div class="event-icon"><i class="bi bi-pencil-square"></i></div>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="event-content">
+                            <div>
+                                <div class="event-header">
+                                    <div>
+                                        <h3 class="event-title"><?= htmlspecialchars($modif['nomEvent']) ?></h3>
+                                        <small style="color: #6c757d;">Événement original: <?= htmlspecialchars($modif['event_original_name']) ?></small>
+                                    </div>
+                                    <span class="event-status" style="background: #fff3cd; color: #856404;">MODIFICATION</span>
+                                </div>
+                                
+                                <div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                                    <strong><i class="bi bi-info-circle"></i> Motif:</strong> <?= htmlspecialchars($modif['motif']) ?>
+                                </div>
+                                
+                                <p class="event-description"><?= htmlspecialchars($modif['descriptionEvenement']) ?></p>
+                                
+                                <div class="event-info">
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <?= htmlspecialchars($modif['lieu']) ?>
+                                    </div>
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                                        </svg>
+                                        <?= $modif['places'] ? htmlspecialchars($modif['places']) . ' places' : 'Places illimitées' ?>
+                                    </div>
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <?= htmlspecialchars($modif['dateDepart']) ?> à <?= htmlspecialchars($modif['heureDepart']) ?>
+                                    </div>
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        Fin: <?= htmlspecialchars($modif['dateFin']) ?> à <?= htmlspecialchars($modif['heureFin']) ?>
+                                    </div>
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                                        </svg>
+                                        Club: <?= htmlspecialchars($modif['clubNom']) ?>
+                                    </div>
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <?= htmlspecialchars($modif['organisateur_email']) ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="event-actions">
+                                <form method="POST" style="display: inline;">
+                                    <input type="hidden" name="modification_id" value="<?= $modif['id'] ?>">
+                                    <input type="hidden" name="action" value="approuver_modification">
+                                    <button type="submit" class="btn-validate" onclick="return confirm('Approuver cette modification ? Les changements seront appliqués à l\'événement.')">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Approuver
+                                    </button>
+                                </form>
+                                
+                                <form method="POST" style="display: inline;">
+                                    <input type="hidden" name="modification_id" value="<?= $modif['id'] ?>">
+                                    <input type="hidden" name="action" value="rejeter_modification">
+                                    <button type="submit" class="btn-reject" onclick="return confirm('Rejeter cette demande de modification ?')">
+                                        <i class="bi bi-x-circle-fill me-1"></i>Rejeter
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Demandes d'annulation -->
+    <div id="content-annulations" class="tab-content" style="display: none;">
+        <?php if (empty($cancellation_requests)): ?>
+            <div class="empty-state">
+                <i class="fa-regular fa-calendar-times"></i>
+                <h3>Aucune demande d'annulation</h3>
+                <p>Toutes les demandes d'annulation ont été traitées.</p>
+            </div>
+        <?php else: ?>
+            <div class="events-list">
+                <?php foreach ($cancellation_requests as $cancel): ?>
+                <div class="event-card">
+                    <div class="event-card-inner">
+                        <div class="event-image" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                            <div class="event-icon"><i class="bi bi-x-octagon"></i></div>
+                        </div>
+                        
+                        <div class="event-content">
+                            <div>
+                                <div class="event-header">
+                                    <h3 class="event-title"><?= htmlspecialchars($cancel['nomEvent']) ?></h3>
+                                    <span class="event-status" style="background: #f8d7da; color: #721c24;">ANNULATION</span>
+                                </div>
+                                
+                                <div style="background: #f8d7da; padding: 10px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #dc3545;">
+                                    <strong><i class="bi bi-exclamation-triangle"></i> Motif d'annulation:</strong><br>
+                                    <?= htmlspecialchars($cancel['motif']) ?>
+                                </div>
+                                
+                                <div class="event-info">
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <?= htmlspecialchars($cancel['lieu']) ?>
+                                    </div>
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                                        </svg>
+                                        <?= $cancel['places'] ? htmlspecialchars($cancel['places']) . ' places' : 'Places illimitées' ?>
+                                    </div>
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <?= htmlspecialchars($cancel['dateDepart']) ?> - <?= htmlspecialchars($cancel['dateFin']) ?>
+                                    </div>
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                                        </svg>
+                                        Club: <?= htmlspecialchars($cancel['clubNom']) ?>
+                                    </div>
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <?= htmlspecialchars($cancel['organisateur_email']) ?>
+                                    </div>
+                                    <div class="info-item">
+                                        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        Demandé le: <?= date('d/m/Y H:i', strtotime($cancel['date_demande'])) ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="event-actions">
+                                <form method="POST" style="display: inline;">
+                                    <input type="hidden" name="annulation_id" value="<?= $cancel['id'] ?>">
+                                    <input type="hidden" name="action" value="approuver_annulation">
+                                    <button type="submit" class="btn-validate" onclick="return confirm('Approuver cette annulation ? L\'événement sera marqué comme Annulé.')">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Approuver
+                                    </button>
+                                </form>
+                                
+                                <form method="POST" style="display: inline;">
+                                    <input type="hidden" name="annulation_id" value="<?= $cancel['id'] ?>">
+                                    <input type="hidden" name="action" value="rejeter_annulation">
+                                    <button type="submit" class="btn-reject" onclick="return confirm('Rejeter cette demande d\'annulation ?')">
+                                        <i class="bi bi-x-circle-fill me-1"></i>Rejeter
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>
 
 <script>
 function navigateTo(page) {
     window.location.href = page;
+}
+
+function showTab(tabName) {
+    // Hide all tab contents
+    const contents = document.querySelectorAll('.tab-content');
+    contents.forEach(content => content.style.display = 'none');
+    
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('.request-tab');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    // Show selected tab content
+    document.getElementById('content-' + tabName).style.display = 'block';
+    
+    // Add active class to selected tab
+    document.getElementById('tab-' + tabName).classList.add('active');
 }
 
 // Auto-hide alerts after 5 seconds
