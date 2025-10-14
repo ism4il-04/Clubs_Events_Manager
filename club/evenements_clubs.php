@@ -58,6 +58,24 @@ include "../includes/header.php";
             color: white;
             text-decoration: none;
         }
+        
+        .alert {
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
     </style>
 
     <title>My évents</title>
@@ -77,6 +95,21 @@ include "../includes/header.php";
         <div class="events-header">
             <h2>Mes Événements</h2>
             <p>Gérez et suivez vos événements en temps réel</p>
+            
+            <?php if (isset($_SESSION['success_message'])): ?>
+                <div class="alert alert-success" style="margin-top: 1rem;">
+                    <i class="bi bi-check-circle-fill"></i> <?= htmlspecialchars($_SESSION['success_message']) ?>
+                </div>
+                <?php unset($_SESSION['success_message']); ?>
+            <?php endif; ?>
+            
+            <?php if (isset($_SESSION['error_message'])): ?>
+                <div class="alert alert-danger" style="margin-top: 1rem;">
+                    <i class="bi bi-x-circle-fill"></i> <?= htmlspecialchars($_SESSION['error_message']) ?>
+                </div>
+                <?php unset($_SESSION['error_message']); ?>
+            <?php endif; ?>
+            
             <div class="events-actions">
                 <a href="ajouter_evenement.php" class="btn btn-primary">
                     <i class="bi bi-plus-circle me-1"></i>Ajouter un événement
@@ -190,13 +223,21 @@ include "../includes/header.php";
                                 Détails
                             </button>
                             
-                            <?php if (in_array($status, ['En attente'])): ?>
-                                <a href="#?id=<?= $event['idEvent'] ?>" class="btn-action btn-edit">Modifier</a>
-                                <a href="#?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
+                            <?php if ($status === 'En attente'): ?>
+                                <!-- En attente: Can modify and cancel directly (no admin verification) -->
+                                <a href="modifier_evenement.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-edit">Modifier</a>
+                                <a href="annuler_evenement.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel" onclick="return confirm('Êtes-vous sûr de vouloir annuler cet événement ?');">Annuler</a>
+                            <?php elseif ($status === 'Rejeté'): ?>
+                                <!-- Rejeté: Can modify and cancel directly -->
+                                <a href="modifier_evenement.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-edit">Modifier</a>
+                                <a href="annuler_evenement.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel" onclick="return confirm('Êtes-vous sûr de vouloir annuler cet événement ?');">Annuler</a>
                             <?php elseif (in_array($status, ['Disponible', 'Sold out'])): ?>
-                                <a href="#?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel">Annuler</a>
-                            <?php else: ?>
-                                <button class="btn-action btn-secondary" disabled>Aucune action</button>
+                                <!-- Disponible/Sold out: Request modification or cancellation (requires admin approval) -->
+                                <a href="demande_modification.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-edit">Demander modification</a>
+                                <a href="demande_annulation.php?id=<?= $event['idEvent'] ?>" class="btn-action btn-cancel" onclick="return confirm('Envoyer une demande d\'annulation à l\'administrateur ?');">Demander annulation</a>
+                            <?php elseif (in_array($status, ['En cours', 'Terminé', 'Annulé'])): ?>
+                                <!-- En cours/Terminé/Annulé: No actions available -->
+                                <button class="btn-action btn-secondary" disabled>Aucune action disponible</button>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -252,8 +293,10 @@ include "../includes/header.php";
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                            <?php if (in_array($status, ['En attente'])): ?>
-                                <a href="edit_event.php?id=<?= $event['idEvent'] ?>" class="btn btn-primary">Modifier</a>
+                            <?php if (in_array($status, ['En attente', 'Rejeté'])): ?>
+                                <a href="modifier_evenement.php?id=<?= $event['idEvent'] ?>" class="btn btn-primary">Modifier</a>
+                            <?php elseif (in_array($status, ['Disponible', 'Sold out'])): ?>
+                                <a href="demande_modification.php?id=<?= $event['idEvent'] ?>" class="btn btn-warning">Demander modification</a>
                             <?php endif; ?>
                         </div>
                     </div>

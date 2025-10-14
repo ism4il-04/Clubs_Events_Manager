@@ -37,7 +37,7 @@ function fetchDemandes($conn, $statusFilter = '', $eventFilter = '') {
         $params[] = $eventFilter;
     }
     
-    $sql .= " ORDER BY date_demande";
+    $sql .= " ORDER BY date_demande DESC";
     
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);

@@ -15,7 +15,7 @@ use Dompdf\Dompdf;
 $stmt = $conn->prepare("
     SELECT e.*
     FROM evenements e
-    WHERE e.organisateur_id = ?
+    WHERE e.organisateur_id = ? and etat='Terminé'
     ORDER BY e.dateFin DESC
 ");
 $stmt->execute([$_SESSION['id']]);
