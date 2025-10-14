@@ -1,8 +1,5 @@
 Options -Indexes
-<Files *>
-    SetHandler none
-    SetType application/octet-stream
-</Files>
 <FilesMatch "\.(pdf)$">
-    SetHandler default-handler
+    Header set Content-Type "application/pdf"
+    Header set Content-Disposition "attachment"
 </FilesMatch>

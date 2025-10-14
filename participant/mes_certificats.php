@@ -394,7 +394,9 @@ $attestation = $attestation->fetchAll();
                             <p class="event-club"><?= htmlspecialchars($att['categorie']) ?></p>
                         </div>
                         <span class="status-badge">
-                            <a href="../<?= $att['attestation'] ?>" download>Télécharger </a>
+                            <a href="download_certificate.php?id=<?= urlencode($att['attestation']) ?>" style="color: inherit; text-decoration: none;">
+                                <i class="fa-solid fa-download"></i> Télécharger
+                            </a>
                         </span>
                     </div>
                 </div>
