@@ -43,21 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Le motif d'annulation est obligatoire.");
         }
         
-        // Store cancellation request in demandes_annulations table
-        // First, check if table exists, if not create it
-        $conn->exec("CREATE TABLE IF NOT EXISTS demandes_annulations (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            evenement_id INT NOT NULL,
-            organisateur_id INT NOT NULL,
-            motif TEXT NOT NULL,
-            status ENUM('En attente', 'Approuvé', 'Rejeté') DEFAULT 'En attente',
-            date_demande TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (evenement_id) REFERENCES evenements(idEvent) ON DELETE CASCADE
-        )");
-        
-        // Insert cancellation request
-        $stmt = $conn->prepare("INSERT INTO demandes_annulations (evenement_id, organisateur_id, motif) VALUES (?, ?, ?)");
-        $stmt->execute([$eventId, $_SESSION['id'], $motif]);
+        // Update event with cancellation request
+        $stmt = $conn->prepare("UPDATE evenements SET status = 'Annulation demandée', motif_demande = ? WHERE idEvent = ?");
+        $stmt->execute([$motif, $eventId]);
         
         $_SESSION['success_message'] = "Demande d'annulation envoyée avec succès ! Elle sera examinée par l'administrateur.";
         header("Location: evenements_clubs.php");
