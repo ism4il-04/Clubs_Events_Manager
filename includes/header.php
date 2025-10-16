@@ -79,7 +79,7 @@ $club = !empty($informations) ? $informations[0] : null;
             <?php endif; ?>
             <span class="club-name"><?= htmlspecialchars($club['clubNom'] ?? $club['nom_utilisateur'] ?? 'Utilisateur') ?></span>
         </div>
-        <a href="../logout.php">
+        <a href="../auth/logout.php">
             <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
         </a>
     </div>

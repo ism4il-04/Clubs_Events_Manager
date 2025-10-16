@@ -1,14 +1,12 @@
 <?php
 session_start();
 if (!isset($_SESSION['email']) ) {
-    header("Location: ../login.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
 require_once "../includes/db.php";
 
-// [Le code PHP de gestion des actions reste identique à la version précédente]
-// ... (même code de traitement des actions CRUD)
 
 // Récupérer tous les utilisateurs avec leurs rôles et informations
 $stmt = $conn->prepare("SELECT u.*,o.description, 

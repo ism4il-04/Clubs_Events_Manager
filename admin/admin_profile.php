@@ -4,7 +4,7 @@ include '../includes/db.php';
 include 'admin_header.php';
 
 if (!isset($_SESSION['id'])) {
-    header('Location: ../login.php');
+    header("Location: ../auth/login.php");
     exit;
 }
 
