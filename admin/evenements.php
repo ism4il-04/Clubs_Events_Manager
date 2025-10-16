@@ -66,15 +66,63 @@ $message = $_GET['message'] ?? '';
         }
         .table-responsive {
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
+            overflow: hidden;
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table thead th {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            font-weight: 600;
+            padding: 1rem;
+        }
+        .table tbody td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
         }
         .badge {
-            font-size: 0.75em;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
-        .actions form {
-            display: inline-block;
-            margin: 2px;
+        .badge.bg-success {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+        }
+        .badge.bg-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        }
+        .badge.bg-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            color: white;
+        }
+        .form-select {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        .form-select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         }
     </style>
 </head>

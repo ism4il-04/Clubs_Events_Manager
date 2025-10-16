@@ -200,38 +200,37 @@ $message = $_GET['message'] ?? '';
         
         .event-card {
             background: white;
-            border-radius: 16px;
-            padding: 0;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
             transition: all 0.3s ease;
             overflow: hidden;
             margin-bottom: 20px;
         }
-        
+
         .event-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 123, 255, 0.2);
         }
-        
-        .event-card-inner {
-            display: flex;
-            min-height: 200px;
-        }
-        
+
         .event-image {
             width: 200px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #007bff, #0056b3);
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
         }
-        
+
+        .event-card-inner {
+            display: flex;
+            min-height: 200px;
+        }
+
         .event-icon {
             font-size: 3rem;
             color: white;
         }
-        
+
         .event-content {
             flex: 1;
             padding: 24px;
@@ -239,21 +238,21 @@ $message = $_GET['message'] ?? '';
             flex-direction: column;
             justify-content: space-between;
         }
-        
+
         .event-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 16px;
         }
-        
+
         .event-title {
             font-size: 1.5rem;
             font-weight: 700;
             color: #1a202c;
             margin: 0;
         }
-        
+
         .event-status {
             padding: 6px 16px;
             border-radius: 20px;
@@ -261,19 +260,49 @@ $message = $_GET['message'] ?? '';
             font-weight: 600;
             text-transform: uppercase;
         }
-        
+
         .status-pending {
             background: #fef3cd;
             color: #856404;
         }
-        
+
+        .status-disponible {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-en-cours {
+            background: #cce7ff;
+            color: #0066cc;
+        }
+
+        .status-termine {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .status-annule {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-rejete {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-sold-out {
+            background: #fff3cd;
+            color: #856404;
+        }
+
         .event-info {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
             margin-bottom: 20px;
         }
-        
+
         .info-item {
             display: flex;
             align-items: center;
@@ -282,99 +311,105 @@ $message = $_GET['message'] ?? '';
             font-size: 0.95rem;
         }
         
-        .info-icon {
-            width: 16px;
-            height: 16px;
-            color: #667eea;
-        }
-        
-        .event-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-        
         .btn-validate, .btn-reject {
             padding: 10px 20px;
             border: none;
             border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
         .btn-validate {
-            background: #10b981;
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
-        }
-        
-        .btn-validate:hover {
-            background: #059669;
-            transform: translateY(-2px);
-        }
-        
-        .btn-reject {
-            background: #ef4444;
-            color: white;
-        }
-        
-        .btn-reject:hover {
-            background: #dc2626;
-            transform: translateY(-2px);
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-        
-        .empty-state i {
-            font-size: 64px;
-            color: #d1d5db;
-            margin-bottom: 20px;
-        }
-        
-        .empty-state h3 {
-            font-size: 1.3rem;
-            color: #4b5563;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-        
-        .empty-state p {
-            color: #6b7280;
-            font-size: 0.95rem;
-        }
-        
-        .request-tab {
-            padding: 12px 24px;
-            background: transparent;
             border: none;
-            border-bottom: 3px solid transparent;
-            font-size: 1rem;
+            padding: 10px 20px;
+            border-radius: 8px;
             font-weight: 600;
-            color: #6c757d;
-            cursor: pointer;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
-        
+
+        .btn-validate:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            color: white;
+        }
+
+        .btn-reject {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-reject:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            color: white;
+        }
+
+        .btn-details {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-details:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            color: white;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.pending {
+            background: #fef3cd;
+            color: #856404;
+        }
+
+        .status-badge.accepted {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .request-tab {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
         .request-tab:hover {
             color: #007bff;
             background: #f8f9fa;
         }
-        
+
         .request-tab.active {
             color: #007bff;
             border-bottom-color: #007bff;
             background: #f0f7ff;
         }
-        
+
         .badge {
             background: #007bff;
             color: white;
@@ -383,24 +418,15 @@ $message = $_GET['message'] ?? '';
             font-size: 0.75rem;
             font-weight: 600;
         }
-        
+
         .badge-warning {
             background: #ffc107;
             color: #856404;
         }
-        
+
         .badge-danger {
             background: #dc3545;
             color: white;
-        }
-        
-        .tab-content {
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -435,7 +461,7 @@ $message = $_GET['message'] ?? '';
     <?php endif; ?>
     
     <!-- Request Type Tabs -->
-    <div class="request-tabs" style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #e9ecef;">
+    <div class="request-tabs">
         <button class="request-tab active" onclick="showTab('nouveaux')" id="tab-nouveaux">
             Nouveaux événements 
             <?php if (count($pending_events) > 0): ?>

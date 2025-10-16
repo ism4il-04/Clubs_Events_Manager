@@ -255,15 +255,15 @@ $message = $_GET['message'] ?? '';
         }
         .club-card {
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
+            transition: all 0.3s ease;
         }
         .club-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 24px rgba(0, 123, 255, 0.2);
         }
         .club-logo {
             width: 80px;
@@ -274,9 +274,9 @@ $message = $_GET['message'] ?? '';
         }
         .form-container {
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
             margin-bottom: 30px;
         }
         .stats-badge {
@@ -292,13 +292,93 @@ $message = $_GET['message'] ?? '';
             padding: 4px 8px;
             font-size: 0.8rem;
         }
-        .debug-info {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 0.9em;
+
+        /* Button styling with gradients */
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #d97706, #b45309);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-info:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+            color: white;
+        }
+
+        .badge {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge.bg-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3) !important;
+        }
+
+        .badge.bg-info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
         }
         .club-logo-preview {
             transition: transform 0.2s;

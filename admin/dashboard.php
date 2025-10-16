@@ -64,32 +64,32 @@ $recent_events = $stmt->fetchAll();
             margin: 0 auto;
             padding: 20px;
         }
-        
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 40px;
         }
-        
+
         .stat-card-modern {
             background: white;
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
             transition: all 0.3s ease;
             display: block;
         }
-        
+
         .stat-card-modern:hover {
             transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 24px rgba(0, 123, 255, 0.2);
         }
-        
+
         .stat-icon {
             width: 44px;
             height: 44px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+            background: linear-gradient(135deg, #007bff, #0056b3);
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -98,7 +98,7 @@ $recent_events = $stmt->fetchAll();
 
         .stat-icon i {
             font-size: 1.4rem;
-            color: #667eea;
+            color: white;
         }
 
         .stat-header {
@@ -121,44 +121,44 @@ $recent_events = $stmt->fetchAll();
             color: #1a202c;
             margin: 0;
         }
-        
+
         .stat-content h3 {
             font-size: 2rem;
             font-weight: 700;
             color: #1a202c;
             margin: 0 0 4px 0;
         }
-        
+
         .stat-content p {
             color: #718096;
             font-size: 0.95rem;
             margin: 0;
         }
-        
+
         .quick-actions-modern {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
             margin-bottom: 40px;
         }
-        
+
         .action-card-modern {
             background: white;
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
             transition: all 0.3s ease;
         }
-        
+
         .action-card-modern:hover {
             transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 24px rgba(0, 123, 255, 0.2);
         }
-        
+
         .action-icon {
             width: 44px;
             height: 44px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+            background: linear-gradient(135deg, #007bff, #0056b3);
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -168,23 +168,23 @@ $recent_events = $stmt->fetchAll();
 
         .action-icon i {
             font-size: 1.3rem;
-            color: #667eea;
+            color: white;
         }
-        
+
         .action-content h4 {
             font-size: 1.25rem;
             font-weight: 600;
             color: #1a202c;
             margin: 0 0 8px 0;
         }
-        
+
         .action-content p {
             color: #718096;
             font-size: 0.95rem;
             margin: 0 0 16px 0;
             line-height: 1.5;
         }
-        
+
         .btn-action-modern {
             padding: 10px 20px;
             border-radius: 8px;
@@ -194,16 +194,138 @@ $recent_events = $stmt->fetchAll();
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-block;
-        }
-        
-        .btn-action-modern.primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #007bff, #0056b3);
             color: white;
         }
-        
-        .btn-action-modern.primary:hover {
+
+        .btn-action-modern:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+
+        .events-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .event-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 123, 255, 0.2);
+        }
+
+        .event-card-inner {
+            display: flex;
+            min-height: 200px;
+        }
+
+        .event-image {
+            width: 200px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .event-icon {
+            font-size: 3rem;
+            color: white;
+        }
+
+        .event-content {
+            flex: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .event-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin: 0;
+        }
+
+        .event-status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-en-attente {
+            background: #fef3cd;
+            color: #856404;
+        }
+
+        .status-disponible {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-en-cours {
+            background: #cce7ff;
+            color: #0066cc;
+        }
+
+        .status-termine {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .status-annule {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-rejete {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-sold-out {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .event-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+
+        .info-icon {
+            width: 16px;
+            height: 16px;
+            color: #007bff;
         }
     </style>
 </head>
@@ -299,7 +421,18 @@ $recent_events = $stmt->fetchAll();
                             <div>
                                 <div class="event-header">
                                     <h3 class="event-title"><?php echo htmlspecialchars($event['nomEvent']); ?></h3>
-                                    <span class="event-status status-<?= strtolower(str_replace(' ', '-', $event['status'])) ?>">
+                                    <?php
+                                    $statusClass = [
+                                        'En attente' => 'status-en-attente',
+                                        'Disponible' => 'status-disponible',
+                                        'En cours' => 'status-en-cours',
+                                        'Terminé' => 'status-termine',
+                                        'Annulé' => 'status-annule',
+                                        'Rejeté' => 'status-rejete',
+                                        'Sold out' => 'status-sold-out'
+                                    ][$event['status']] ?? 'status-en-attente';
+                                    ?>
+                                    <span class="event-status <?= $statusClass ?>">
                                         <?php echo htmlspecialchars($event['status']); ?>
                                     </span>
                                 </div>

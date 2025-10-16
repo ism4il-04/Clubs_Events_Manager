@@ -57,11 +57,11 @@ $message = $_GET['message'] ?? '';
         .advanced-table {
             background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
             overflow: hidden;
         }
         .table-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #007bff, #0056b3);
             color: white;
             padding: 20px;
         }
@@ -72,7 +72,7 @@ $message = $_GET['message'] ?? '';
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #007bff, #0056b3);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -87,12 +87,33 @@ $message = $_GET['message'] ?? '';
             font-weight: 600;
             text-transform: uppercase;
         }
-        .badge-admin { background: #dc3545; color: white; }
-        .badge-club { background: #ffc107; color: #000; }
-        .badge-etudiant { background: #17a2b8; color: white; }
+        .badge-admin {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        .badge-club {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        .badge-etudiant {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
         .stats-badge {
             font-size: 0.7rem;
             margin: 2px;
+        }
+        .badge.bg-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3) !important;
+        }
+        .badge.bg-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        }
+        .badge.bg-info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+        }
+        .badge.bg-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563) !important;
         }
         .action-buttons {
             display: flex;
@@ -104,8 +125,56 @@ $message = $_GET['message'] ?? '';
             font-size: 0.75rem;
             border-radius: 6px;
         }
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #d97706, #b45309);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            color: white;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            color: white;
+        }
+        .btn-info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-info:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            color: white;
+        }
+        .btn-outline-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-outline-secondary:hover {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+            color: white;
+        }
         .table-hover tbody tr:hover {
-            background-color: rgba(102, 126, 234, 0.05);
+            background-color: rgba(0, 123, 255, 0.05);
         }
         .user-info-cell {
             max-width: 200px;
@@ -121,15 +190,15 @@ $message = $_GET['message'] ?? '';
         }
         .stats-card {
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border-left: 4px solid #667eea;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
+            border-left: 4px solid #007bff;
         }
         .stats-number {
             font-size: 1.8rem;
             font-weight: 700;
-            color: #667eea;
+            color: #007bff;
         }
         .quick-actions {
             display: flex;
@@ -137,13 +206,20 @@ $message = $_GET['message'] ?? '';
             flex-wrap: wrap;
         }
         .export-btn {
-            background: #28a745;
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
             border: none;
             padding: 8px 15px;
             border-radius: 6px;
             font-size: 0.85rem;
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .export-btn:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            color: white;
         }
         .club-logo-small {
             width: 30px;
@@ -159,7 +235,7 @@ $message = $_GET['message'] ?? '';
             display: inline-block;
             margin-right: 5px;
         }
-        .status-active { background: #28a745; }
+        .status-active { background: #10b981; }
         .status-inactive { background: #6c757d; }
         .table th {
             font-weight: 600;
@@ -497,7 +573,7 @@ function showUserDetailsModal(user) {
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-4 text-center">
-                                ${user.avatar ? 
+                                ${user.avatar ?
                                     `<img src="../${user.avatar}" class="img-fluid rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;" alt="Avatar">` :
                                     `<div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 120px; height: 120px; font-size: 2rem;">
                                         ${user.nom_utilisateur ? user.nom_utilisateur.substring(0, 2).toUpperCase() : 'U'}
@@ -524,7 +600,7 @@ function showUserDetailsModal(user) {
                                         <tr><td><strong>Description:</strong></td><td>${user.description || 'Aucune description'}</td></tr>
                                     ` : ''}
                                 </table>
-                                
+
                                 <h6>Statistiques</h6>
                                 <div class="row">
                                     ${user.role === 'club' ? `
@@ -560,16 +636,16 @@ function showUserDetailsModal(user) {
             </div>
         </div>
     `;
-    
+
     // Supprimer l'ancienne modal si elle existe
     const existingModal = document.getElementById('userDetailsModal');
     if (existingModal) {
         existingModal.remove();
     }
-    
+
     // Ajouter la nouvelle modal au DOM
     document.body.insertAdjacentHTML('beforeend', modalContent);
-    
+
     // Afficher la modal
     const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
     modal.show();

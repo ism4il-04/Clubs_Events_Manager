@@ -3,7 +3,7 @@ session_start();
 require_once '../includes/db.php';
 
 if (!isset($_SESSION['id'])) {
-    header('Location: login.php');
+    header('Location: ../login.php');
     exit;
 }
 
