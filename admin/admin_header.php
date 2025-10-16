@@ -21,7 +21,9 @@
         </div>
     </div>
     <div class="header-right">
-        <span><?php echo htmlspecialchars($_SESSION['email']); ?></span>
+        <a href="admin_profile.php">
+            <i class="fa-solid fa-user-shield"></i> Mon profil
+        </a>
         <a href="../logout.php">
             <i class="fa-solid fa-right-from-bracket"></i>Déconnexion</a>
     </div>

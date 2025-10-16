@@ -20,6 +20,50 @@ $club_data = [
     'password' => ''
 ];
 
+$uploadMessage = '';
+$uploadError = '';
+
+// Handle logo upload
+if(isset($_POST['upload_logo']) && isset($_FILES['logo_file'])){
+    if ($_FILES['logo_file']['error'] === UPLOAD_ERR_OK) {
+        // Validate file type
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $fileType = $_FILES['logo_file']['type'];
+
+        if (!in_array($fileType, $allowedTypes)) {
+            $uploadError = "Type de fichier non autorisé. Utilisez JPG, PNG, GIF ou WEBP.";
+        } else {
+            // Validate file size (max 5MB)
+            $maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            if ($_FILES['logo_file']['size'] > $maxSize) {
+                $uploadError = "Le fichier est trop volumineux. Taille maximale: 5MB.";
+            } else {
+                // Set upload directory
+                $uploadDir = "../assets/logo/";
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+
+                // Generate unique filename
+                $extension = pathinfo($_FILES['logo_file']['name'], PATHINFO_EXTENSION);
+                $filename = uniqid('club_logo_') . '.' . $extension;
+                $targetPath = "assets/logo/" . $filename;
+                $fullTargetPath = $uploadDir . $filename;
+
+                if (move_uploaded_file($_FILES['logo_file']['tmp_name'], $fullTargetPath)) {
+                    $uploadMessage = "Logo téléchargé avec succès ! Chemin: " . $targetPath;
+                    // Set the logo path in club_data for form display
+                    $club_data['logo'] = $targetPath;
+                } else {
+                    $uploadError = "Erreur lors du téléchargement du fichier.";
+                }
+            }
+        }
+    } else {
+        $uploadError = "Aucun fichier sélectionné ou erreur lors du téléchargement.";
+    }
+}
+
 // Traitement des actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
@@ -39,6 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Vérifications
                 if (empty($clubNom) || empty($nom_abr) || empty($email) || empty($nom_utilisateur) || empty($password)) {
                     throw new Exception("Tous les champs obligatoires doivent être remplis.");
+                }
+                
+                // Vérifier que le logo est fourni
+                if (empty($logo)) {
+                    throw new Exception("Le logo du club est obligatoire.");
                 }
 
                 // Vérifier si l'email existe déjà
@@ -251,6 +300,33 @@ $message = $_GET['message'] ?? '';
             margin: 10px 0;
             font-size: 0.9em;
         }
+        .club-logo-preview {
+            transition: transform 0.2s;
+        }
+        .club-logo-preview:hover {
+            transform: scale(1.05);
+        }
+        .logo-upload-section {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .logo-upload-section:hover {
+            border-color: #007bff;
+            background: #f0f8ff;
+        }
+        .club-logo-placeholder {
+            width: 80px;
+            height: 80px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -276,6 +352,14 @@ $message = $_GET['message'] ?? '';
 
     <?php if ($message): ?>
         <div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($message) ?></div>
+    <?php endif; ?>
+    
+    <?php if ($uploadMessage): ?>
+        <div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($uploadMessage) ?></div>
+    <?php endif; ?>
+    
+    <?php if ($uploadError): ?>
+        <div class="alert alert-danger"><i class="bi bi-x-circle-fill me-2"></i><?= htmlspecialchars($uploadError) ?></div>
     <?php endif; ?>
     
     <?php if (isset($error)): ?>
@@ -321,10 +405,36 @@ $message = $_GET['message'] ?? '';
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Logo (URL)</label>
-                        <input type="text" class="form-control" name="logo" 
-                               value="<?= htmlspecialchars($club_data['logo']) ?>"
-                               placeholder="ex: includes/logo-club.png">
+                        <label class="form-label">Logo du club</label>
+                        
+                        <!-- Logo Preview -->
+                        <?php if (!empty($club_data['logo'])): ?>
+                        <div class="mb-2">
+                            <img src="../<?= htmlspecialchars($club_data['logo']) ?>" 
+                                 class="club-logo-preview" 
+                                 alt="Logo actuel"
+                                 style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #e9ecef;"
+                                 onerror="this.style.display='none'">
+                        </div>
+                        <?php endif; ?>
+                        
+                        <!-- File Upload -->
+                        <div class="logo-upload-section">
+                            <label class="form-label">Télécharger un fichier logo <span class="text-danger">*</span></label>
+                            <form method="POST" enctype="multipart/form-data" class="d-inline">
+                                <div class="input-group">
+                                    <input type="file" class="form-control" name="logo_file" 
+                                           accept="image/jpeg,image/png,image/gif,image/webp" required>
+                                    <button type="submit" name="upload_logo" class="btn btn-outline-primary">
+                                        <i class="bi bi-upload"></i> Télécharger
+                                    </button>
+                                </div>
+                            </form>
+                            <small class="text-muted">Formats acceptés: JPG, PNG, GIF, WEBP (max 5MB) - <strong>Obligatoire</strong></small>
+                        </div>
+                        
+                        <!-- Hidden field to store logo path -->
+                        <input type="hidden" name="logo" value="<?= htmlspecialchars($club_data['logo']) ?>">
                     </div>
                 </div>
                 
@@ -359,7 +469,8 @@ $message = $_GET['message'] ?? '';
             </div>
             
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-success">
+                <button type="submit" class="btn btn-success" id="submitBtn" 
+                        <?= $form_action === 'ajouter' && empty($club_data['logo']) ? 'disabled' : '' ?>>
                     <?= $form_action === 'ajouter' ? '<i class="bi bi-plus-circle me-1"></i>Ajouter' : '<i class="bi bi-save me-1"></i>Sauvegarder' ?>
                 </button>
                 <button type="button" class="btn btn-secondary" onclick="hideForm()">Annuler</button>
@@ -383,7 +494,14 @@ $message = $_GET['message'] ?? '';
                         <img src="../<?= htmlspecialchars($club['logo']) ?>" 
                              class="club-logo me-3" 
                              alt="Logo <?= htmlspecialchars($club['clubNom']) ?>"
-                             onerror="this.style.display='none'">
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="club-logo-placeholder me-3" style="display: none;">
+                            <i class="bi bi-building" style="font-size: 2rem; color: #6c757d;"></i>
+                        </div>
+                    <?php else: ?>
+                        <div class="club-logo-placeholder me-3">
+                            <i class="bi bi-building" style="font-size: 2rem; color: #6c757d;"></i>
+                        </div>
                     <?php endif; ?>
                     <div class="flex-grow-1">
                         <h5 class="mb-1"><?= htmlspecialchars($club['clubNom']) ?></h5>
@@ -499,6 +617,39 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => alert.remove(), 500);
         }, 5000);
     });
+    
+    // Gérer l'activation du bouton de soumission
+    const submitBtn = document.getElementById('submitBtn');
+    const logoInput = document.querySelector('input[name="logo"]');
+    
+    if (submitBtn && logoInput) {
+        // Vérifier l'état initial
+        updateSubmitButton();
+        
+        // Écouter les changements du champ logo (mis à jour après upload)
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                    updateSubmitButton();
+                }
+            });
+        });
+        
+        observer.observe(logoInput, { attributes: true });
+    }
+    
+    function updateSubmitButton() {
+        if (submitBtn && logoInput) {
+            const hasLogo = logoInput.value && logoInput.value.trim() !== '';
+            submitBtn.disabled = !hasLogo;
+            
+            if (!hasLogo) {
+                submitBtn.title = 'Veuillez d\'abord télécharger un logo pour le club';
+            } else {
+                submitBtn.title = '';
+            }
+        }
+    }
 });
 </script>
 
