@@ -702,7 +702,6 @@ if(isset($_POST['test_email'])) {
         </div>
     </div>
     <div class="header-right">
-        <span><?= htmlspecialchars($profile['clubNom']) ?></span>
         <a href="../logout.php">
             <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
         </a>
@@ -716,7 +715,6 @@ if(isset($_POST['test_email'])) {
     <a href="demandes_participants.php"><button>Participants</button></a>
     <a href="communications.php"><button>Communications</button></a>
     <a href="certificats.php"><button>Certificats</button></a>
-    <a href="profile_club.php"><button class="active">Mon Profile</button></a>
 </nav>
 
 <div class="container">

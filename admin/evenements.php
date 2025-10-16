@@ -135,6 +135,7 @@ $message = $_GET['message'] ?? '';
     <div class="tab active" onclick="navigateTo('evenements.php')">Tous les événements</div>
     <div class="tab" onclick="navigateTo('clubs.php')">Gestion des clubs</div>
     <div class="tab" onclick="navigateTo('utilisateurs.php')">Utilisateurs</div>
+    <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
 </div>
 <div class="container-admin">
     <div class="d-flex justify-content-between align-items-center mb-4">
