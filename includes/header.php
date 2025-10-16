@@ -40,7 +40,7 @@ $club = !empty($informations) ? $informations[0] : null;
     </div>
     <div class="header-right">
         <span><?= htmlspecialchars($club['clubNom'] ?? 'Utilisateur') ?></span>
-        <a href="../logout.php">
+        <a href="../auth/logout.php">
             <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
         </a>
     </div>

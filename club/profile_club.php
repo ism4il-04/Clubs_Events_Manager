@@ -3,7 +3,7 @@ session_start();
 include '../includes/db.php';
 
 if (!isset($_SESSION['id'])) {
-    header('Location: ../login.php');
+    header("Location: ../auth/login.php");
     exit;
 }
 
@@ -703,7 +703,7 @@ if(isset($_POST['test_email'])) {
     </div>
     <div class="header-right">
         <span><?= htmlspecialchars($profile['clubNom']) ?></span>
-        <a href="../logout.php">
+        <a href="../auth/logout.php">
             <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
         </a>
     </div>

@@ -1,7 +1,7 @@
 <?php
 session_start();
 if(!isset($_SESSION["email"])){
-    header("Location: ../login.php");
+    header("Location: ../auth/login.php");
     exit;
 }
 
@@ -365,7 +365,7 @@ $attestation = $attestation->fetchAll();
     </div>
     <div class="header-right">
         <span><?= htmlspecialchars($participant['nom'] . ' ' . $participant['prenom']) ?></span>
-        <a href="../logout.php">
+        <a href="../auth/logout.php">
             <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
         </a>
     </div>

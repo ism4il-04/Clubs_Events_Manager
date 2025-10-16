@@ -3,7 +3,7 @@ session_start();
 require_once '../includes/db.php';
 
 if (!isset($_SESSION['id'])) {
-    header('Location: ../login.php');
+    header("Location: ../auth/login.php");
     exit;
 }
 
@@ -116,28 +116,54 @@ $userInfo = [
             overflow: hidden;
             position: relative;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .card-image::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
-            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .card-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            object-position: center;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease;
+        }
+
+        .card-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+
+        .card:hover .card-image::before {
+            opacity: 1;
         }
 
         .card:hover .card-image img {
             transform: scale(1.08);
+            filter: brightness(1.1);
+        }
+
+        /* Fallback for missing images */
+        .card-image.no-image {
+            background: linear-gradient(135deg, #a8b8c8 0%, #7c8aa0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .card-image.no-image::after {
+            content: '📷';
         }
 
         .card-header {
@@ -438,7 +464,7 @@ $userInfo = [
     </div>
     <div class="header-right">
         <span><?= htmlspecialchars($participant['nom'] . ' ' . $participant['prenom']) ?></span>
-        <a href="../logout.php"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</a>
+        <a href="../auth/logout.php"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</a>
     </div>
 </header>
 
@@ -520,8 +546,10 @@ $userInfo = [
         <div class="card" data-category="<?= htmlspecialchars($event['categorie'] ?? 'Non spécifiée') ?>" data-event-id="<?= $event['idEvent'] ?>">
             <?php if (!empty($event['image'])): ?>
                 <div class="card-image">
-                    <img src="../<?= htmlspecialchars($event['image']) ?>" alt="<?= htmlspecialchars($event['nomEvent']) ?>">
+                    <img src="../<?= htmlspecialchars($event['image']) ?>" alt="<?= htmlspecialchars($event['nomEvent']) ?>" loading="lazy">
                 </div>
+            <?php else: ?>
+                <div class="card-image no-image"></div>
             <?php endif; ?>
 
             <div class="card-header">

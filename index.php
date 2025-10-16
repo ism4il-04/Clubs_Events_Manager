@@ -206,8 +206,8 @@ exit();
 <header>
     <h1>Plateforme Événements ENSA</h1>
     <nav>
-        <a href="login.php">Connexion</a>
-        <a href="signup.php">Inscription</a>
+        <a href="auth/login.php">Connexion</a>
+        <a href="auth/signup.php">Inscription</a>
     </nav>
 </header>
 
@@ -215,8 +215,8 @@ exit();
     <h2>Bienvenue sur la plateforme officielle des événements 🗓️</h2>
     <p>Gérez, organisez et participez facilement aux événements de votre établissement. Que vous soyez étudiant, membre d’un club ou administrateur, cette plateforme vous simplifie la vie.</p>
     <div class="cta-buttons">
-        <a href="signup.php" class="cta-btn">S'inscrire</a>
-        <a href="login.php" class="cta-btn">Se Connecter</a>
+        <a href="auth/signup.php" class="cta-btn">S'inscrire</a>
+        <a href="auth/login.php" class="cta-btn">Se Connecter</a>
     </div>
 </section>
 

@@ -1,39 +1,38 @@
 <?php
 session_start();
 
-require_once 'vendor/autoload.php';
-include './includes/db.php';
+require_once '../vendor/autoload.php';
+include '../includes/db.php';
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');$dotenv->load();
 $secretKey = $_ENV['SECRET_KEY'];
 $siteKey = $_ENV['SITE_KEY'];
 // --- INSCRIPTION (participer) ---
-if (isset($_POST['participer'])) {
-    $nom = $_POST['nom'];
-    $prenom = $_POST['prenom'];
-    $nom_utilisateur = $_POST['nom_utilisateur'];
-    $email = $_POST['email'];
-    $password = $_POST['password'];
-    $tel = $_POST['telephone'];
-    $date_naissance = $_POST['date_naissance'];
-    $annee = $_POST['annee'];
-    $filiere = $_POST['filiere'];
-
-    $hashed_password=password_hash($password, PASSWORD_DEFAULT);
-    $user = $conn->prepare("INSERT INTO utilisateurs(email, password, nom_utilisateur) VALUES (?, ?, ?)");
-    $user->execute([$email, $hashed_password, $nom_utilisateur]);
-
-    $participant = $conn->prepare("SELECT id FROM utilisateurs WHERE email = ? AND nom_utilisateur = ?");
-    $participant->execute([$email, $nom_utilisateur]);
-    $u = $participant->fetch(PDO::FETCH_ASSOC);
-    $user_id = $u['id'] ?? null;
-
-    if ($user_id) {
-        $fin = $conn->prepare("INSERT INTO etudiants (id, filiere, annee, dateNaissance, prenom, nom, telephone) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $fin->execute([$user_id, $filiere, $annee, $date_naissance, $prenom, $nom, $tel]);
-    }
-}
+//if (isset($_POST['participer'])) {
+//    $nom = $_POST['nom'];
+//    $prenom = $_POST['prenom'];
+//    $nom_utilisateur = $_POST['nom_utilisateur'];
+//    $email = $_POST['email'];
+//    $password = $_POST['password'];
+//    $tel = $_POST['telephone'];
+//    $date_naissance = $_POST['date_naissance'];
+//    $annee = $_POST['annee'];
+//    $filiere = $_POST['filiere'];
+//
+//    $hashed_password=password_hash($password, PASSWORD_DEFAULT);
+//    $user = $conn->prepare("INSERT INTO utilisateurs(email, password, nom_utilisateur) VALUES (?, ?, ?)");
+//    $user->execute([$email, $hashed_password, $nom_utilisateur]);
+//
+//    $participant = $conn->prepare("SELECT id FROM utilisateurs WHERE email = ? AND nom_utilisateur = ?");
+//    $participant->execute([$email, $nom_utilisateur]);
+//    $u = $participant->fetch(PDO::FETCH_ASSOC);
+//    $user_id = $u['id'] ?? null;
+//
+//    if ($user_id) {
+//        $fin = $conn->prepare("INSERT INTO etudiants (id, filiere, annee, dateNaissance, prenom, nom, telephone) VALUES (?, ?, ?, ?, ?, ?, ?)");
+//        $fin->execute([$user_id, $filiere, $annee, $date_naissance, $prenom, $nom, $tel]);
+//    }
+//}
 
 // --- LOGIN ---
 if (isset($_POST['login'])) {
@@ -63,8 +62,10 @@ if (isset($_POST['login'])) {
         $select->execute([$email]);
         $data = $select->fetch();
 
-
-        if ($data && password_verify($password, $data['password'])) {
+        if ($data) {
+            if ($data['active'] == 0) {
+                echo "<script>alert('Votre compte n'est pas encore activé. Veuillez vérifier votre email pour activer votre compte.');</script>";
+            } elseif (password_verify($password, $data['password'])) {
 
                 $_SESSION['id'] = $data['id'];
                 $_SESSION['email'] = $data['email'];
@@ -76,7 +77,7 @@ if (isset($_POST['login'])) {
 
                 // Check if user is admin
                 if ($isAdmin) {
-                    header("Location: ./admin/dashboard.php");
+                    header("Location: ../admin/dashboard.php");
                     exit;
                 }
 
@@ -86,16 +87,19 @@ if (isset($_POST['login'])) {
                 $isClub = $clubCheck->fetch();
 
                 if ($isClub) {
-                    header("Location: ./club/dashboard.php");
+                    header("Location: ../club/dashboard.php");
                     exit;
                 }
 
                 // Else, it's a participant
-                header("Location: ./participant/dashboard.php");
+                header("Location: ../participant/dashboard.php");
                 exit;
 
-        }else {
-            echo "<script>alert('Email ou mot de passe incorrect.');</script>";
+            } else {
+                echo "<script>alert('Email ou mot de passe incorrect.');</script>";
+            }
+        } else {
+            echo "<script>alert('Aucun compte trouvé avec cet email.');</script>";
         }
 
     } else {
@@ -110,7 +114,7 @@ if (isset($_POST['login'])) {
     <title>Connexion - Clubs Events</title>
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" sizes="16x16" href="pigeon2-removebg-preview.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../pigeon2-removebg-preview.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script src="https://www.google.com/recaptcha/api.js" async defer>
     </script>
@@ -225,7 +229,7 @@ if (isset($_POST['login'])) {
 
 <div class="login-container">
     <div class="logo">
-        <img class="img" src="Horizontal_Logo-removebg-preview.png" alt="logo">
+        <img class="img" src="../Horizontal_Logo-removebg-preview.png" alt="logo">
     </div>
 
     <form method="POST" action="login.php">
@@ -240,12 +244,13 @@ if (isset($_POST['login'])) {
         </div>
         <button class="btnn" type="submit" name="login">Se connecter</button>
     </form>
+    <p><a href="forgot-password.php">Mot de passe oublié ?</a></p>
 
     <div class="extra-links">
         <p>Pas encore de compte ? <a href="signup.php">S'inscrire</a></p>
     </div>
 
-    <a href="index.php" class="back-home">
+    <a href="landing.php" class="back-home">
         <i class="fa-solid fa-arrow-left"></i> Retour à l'accueil
     </a>
 </div>
