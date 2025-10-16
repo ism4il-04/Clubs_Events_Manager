@@ -133,14 +133,15 @@ function sendEmailWithAttachment($to, $subject, $body, $attachmentPath = null, $
     try {
         // Basic email settings (you may need to configure SMTP)
         $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com'; // Change to your SMTP server
         $mail->SMTPAuth = true;
-        $mail->Username = $adminConfig['email'];
-        $mail->Password = ''; // You'll need to add password or use app password
         $mail->SMTPSecure = 'tls';
-        $mail->Port = 587;
-        
-        $mail->setFrom($adminConfig['email'], $adminConfig['nom_utilisateur']);
+        $mail->Host = $adminConfig['serveur_smtp'];
+        $mail->Username = $adminConfig['nom_smtp'];
+        $mail->Password = decrypt_api_key($adminConfig['api_key_encrypted']);
+        $mail->Port = $adminConfig['port_smtp'];
+        $mail->From = $adminConfig['email'];
+        $mail->FromName = $adminConfig['nom_expediteur'] ?? 'Portail Administrateur';
+        $mail->addReplyTo($adminConfig['email']);
         $mail->addAddress($to);
         $mail->isHTML(true);
         $mail->Subject = $subject;
