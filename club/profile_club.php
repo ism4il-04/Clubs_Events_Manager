@@ -7,6 +7,12 @@ if (!isset($_SESSION['id'])) {
     exit;
 }
 
+// Load PHPMailer classes
+require_once '../vendor/autoload.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
 // Get club profile data with email configuration
 $profileStmt = $conn->prepare("SELECT * FROM organisateur NATURAL JOIN utilisateurs WHERE id = ?");
 $profileStmt->execute([$_SESSION['id']]);
@@ -16,6 +22,10 @@ $uploadMessage = '';
 $uploadError = '';
 $mailMessage = '';
 $mailError = '';
+$testMessage = '';
+$testError = '';
+$clubMessage = '';
+$clubError = '';
 
 // Handle photo upload
 if(isset($_POST['upload'])){
@@ -94,6 +104,23 @@ if(isset($_POST['remove_photo'])) {
     }
 }
 
+// Encryption/Decryption functions for API key
+function encrypt_api_key($api_key) {
+    $key = hash('sha256', 'clubs_events_manager_secret_key_2024', true);
+    $iv = openssl_random_pseudo_bytes(16);
+    $encrypted = openssl_encrypt($api_key, 'AES-256-CBC', $key, 0, $iv);
+    return base64_encode($iv . $encrypted);
+}
+
+function decrypt_api_key($encrypted_api_key) {
+    if (empty($encrypted_api_key)) return '';
+    $key = hash('sha256', 'clubs_events_manager_secret_key_2024', true);
+    $data = base64_decode($encrypted_api_key);
+    $iv = substr($data, 0, 16);
+    $encrypted = substr($data, 16);
+    return openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
+}
+
 // Handle mailing configuration update
 if(isset($_POST['update_mail_config'])) {
     $serveur_smtp = trim($_POST['mail_host']);
@@ -102,18 +129,156 @@ if(isset($_POST['update_mail_config'])) {
     $api_key = trim($_POST['mail_password']);
     $nom_expediteur = trim($_POST['mail_sender_name']);
 
-    if (empty($serveur_smtp) || empty($port_smtp) || empty($nom_smtp) || empty($nom_expediteur)) {
-        $mailError = "Les champs obligatoires doivent être remplis.";
+    // Only validate that at least one field is provided
+    if (empty($serveur_smtp) && empty($port_smtp) && empty($nom_smtp) && empty($nom_expediteur) && empty($api_key)) {
+        $mailError = "Veuillez remplir au moins un champ pour mettre à jour la configuration.";
     } else {
-        // Update database
-        $mailConfig = $conn->prepare("UPDATE organisateur SET serveur_smtp=?, port_smtp=?, nom_smtp=?, api_key=?, nom_expediteur=? WHERE id = ?");
-        if ($mailConfig->execute([$serveur_smtp, $port_smtp, $nom_smtp, $api_key, $nom_expediteur, $_SESSION['id']])) {
+        // Build dynamic update query based on provided fields
+        $updateFields = [];
+        $updateValues = [];
+        
+        if (!empty($serveur_smtp)) {
+            $updateFields[] = "serveur_smtp = ?";
+            $updateValues[] = $serveur_smtp;
+        }
+        
+        if (!empty($port_smtp)) {
+            $updateFields[] = "port_smtp = ?";
+            $updateValues[] = $port_smtp;
+        }
+        
+        if (!empty($nom_smtp)) {
+            $updateFields[] = "nom_smtp = ?";
+            $updateValues[] = $nom_smtp;
+        }
+        
+        if (!empty($nom_expediteur)) {
+            $updateFields[] = "nom_expediteur = ?";
+            $updateValues[] = $nom_expediteur;
+        }
+        
+        // Only update API key if provided
+        if (!empty($api_key)) {
+            $updateFields[] = "api_key_encrypted = ?";
+            $updateValues[] = encrypt_api_key($api_key);
+        }
+        
+        // Add WHERE clause
+        $updateValues[] = $_SESSION['id'];
+        
+        // Build and execute query
+        $sql = "UPDATE organisateur SET " . implode(", ", $updateFields) . " WHERE id = ?";
+        $mailConfig = $conn->prepare($sql);
+        
+        if ($mailConfig->execute($updateValues)) {
             $mailMessage = "Configuration email mise à jour avec succès !";
             // Refresh profile data
             $profileStmt->execute([$_SESSION['id']]);
             $profile = $profileStmt->fetch(PDO::FETCH_ASSOC);
         } else {
             $mailError = "Erreur lors de la mise à jour de la base de données.";
+        }
+    }
+}
+
+// Handle club information update
+if(isset($_POST['update_club_info'])) {
+    $clubNom = trim($_POST['club_nom']);
+    $nom_abr = trim($_POST['nom_abr']);
+    $description = trim($_POST['description']);
+    $email = trim($_POST['email']);
+    $nom_utilisateur = trim($_POST['nom_utilisateur']);
+
+    if (empty($clubNom) || empty($nom_abr) || empty($email) || empty($nom_utilisateur)) {
+        $clubError = "Les champs obligatoires doivent être remplis.";
+    } else {
+        // Check if email is already used by another user
+        $emailCheck = $conn->prepare("SELECT id FROM utilisateurs WHERE email = ? AND id != ?");
+        $emailCheck->execute([$email, $_SESSION['id']]);
+        if ($emailCheck->fetch()) {
+            $clubError = "Cette adresse email est déjà utilisée par un autre utilisateur.";
+        } else {
+            try {
+                $conn->beginTransaction();
+                
+                // Update utilisateurs table
+                $updateUser = $conn->prepare("UPDATE utilisateurs SET email = ?, nom_utilisateur = ? WHERE id = ?");
+                $updateUser->execute([$email, $nom_utilisateur, $_SESSION['id']]);
+                
+                // Update organisateur table
+                $updateClub = $conn->prepare("UPDATE organisateur SET clubNom = ?, nom_abr = ?, description = ? WHERE id = ?");
+                $updateClub->execute([$clubNom, $nom_abr, $description, $_SESSION['id']]);
+                
+                $conn->commit();
+                $clubMessage = "Informations du club mises à jour avec succès !";
+                
+                // Refresh profile data
+                $profileStmt->execute([$_SESSION['id']]);
+                $profile = $profileStmt->fetch(PDO::FETCH_ASSOC);
+                
+            } catch (Exception $e) {
+                $conn->rollBack();
+                $clubError = "Erreur lors de la mise à jour des informations : " . $e->getMessage();
+            }
+        }
+    }
+}
+
+// Handle test email sending
+if(isset($_POST['test_email'])) {
+    $test_email = trim($_POST['test_email_address']);
+    
+    if (empty($test_email)) {
+        $testError = "Veuillez saisir une adresse email de test.";
+    } elseif (!filter_var($test_email, FILTER_VALIDATE_EMAIL)) {
+        $testError = "Adresse email invalide.";
+    } else {
+        // Check if email configuration is complete
+        if (empty($profile['serveur_smtp']) || empty($profile['port_smtp']) || empty($profile['nom_smtp']) || empty($profile['api_key_encrypted'])) {
+            $testError = "Configuration email incomplète. Veuillez d'abord configurer tous les paramètres email.";
+        } else {
+            // Send test email
+            try {
+                $mail = new PHPMailer(true);
+                
+                // Server settings
+                $mail->isSMTP();
+                $mail->Host = $profile['serveur_smtp'];
+                $mail->SMTPAuth = true;
+                $mail->SMTPSecure = 'tls';
+                $mail->Username = $profile['nom_smtp'];
+                $mail->Password = decrypt_api_key($profile['api_key_encrypted']);
+                $mail->Port = $profile['port_smtp'];
+                $mail->From = $profile['email'];
+                $mail->FromName = $profile['nom_expediteur'] ?? $profile['clubNom'];
+                $mail->addReplyTo($profile['email']);
+                $mail->addAddress($test_email);
+                
+                // Content
+                $mail->isHTML(true);
+                $mail->Subject = 'Test de configuration email - ' . $profile['clubNom'];
+                $mail->Body = '
+                    <h2>Test de configuration email</h2>
+                    <p>Bonjour,</p>
+                    <p>Ceci est un email de test pour vérifier que la configuration email de <strong>' . htmlspecialchars($profile['clubNom']) . '</strong> fonctionne correctement.</p>
+                    <p><strong>Détails de la configuration :</strong></p>
+                    <ul>
+                        <li>Serveur SMTP : ' . htmlspecialchars($profile['serveur_smtp']) . '</li>
+                        <li>Port : ' . htmlspecialchars($profile['port_smtp']) . '</li>
+                        <li>Nom d\'utilisateur SMTP : ' . htmlspecialchars($profile['nom_smtp']) . '</li>
+                        <li>Expéditeur : ' . htmlspecialchars($profile['email']) . '</li>
+                        <li>Nom expéditeur : ' . htmlspecialchars($profile['nom_expediteur'] ?? $profile['clubNom']) . '</li>
+                    </ul>
+                    <p>Si vous recevez cet email, la configuration est correcte !</p>
+                    <p>Cordialement,<br>L\'équipe ' . htmlspecialchars($profile['clubNom']) . '</p>
+                ';
+                
+                $mail->send();
+                $testMessage = "Email de test envoyé avec succès à " . htmlspecialchars($test_email) . " !";
+                
+            } catch (Exception $e) {
+                $testError = "Erreur lors de l'envoi de l'email de test : " . $mail->ErrorInfo;
+            }
         }
     }
 }
@@ -445,6 +610,23 @@ if(isset($_POST['update_mail_config'])) {
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
         }
 
+        .btn-test {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-test:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+        }
+
         .photo-info {
             font-size: 0.85rem;
             color: #6b7280;
@@ -567,6 +749,30 @@ if(isset($_POST['update_mail_config'])) {
         </div>
     <?php endif; ?>
 
+    <?php if ($testMessage): ?>
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> <?= htmlspecialchars($testMessage) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($testError): ?>
+        <div class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($testError) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($clubMessage): ?>
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> <?= htmlspecialchars($clubMessage) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($clubError): ?>
+        <div class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($clubError) ?>
+        </div>
+    <?php endif; ?>
+
     <div class="profile-form">
         <!-- Logo Upload Section -->
         <div class="form-section">
@@ -630,38 +836,46 @@ if(isset($_POST['update_mail_config'])) {
                 <i class="fas fa-building"></i>
                 Informations du club
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="clubNom">Nom du club</label>
-                    <input type="text" id="clubNom" name="clubNom" value="<?= htmlspecialchars($profile['clubNom']) ?>" readonly>
+            
+            <form method="post">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="club_nom">Nom du club *</label>
+                        <input type="text" id="club_nom" name="club_nom" value="<?= htmlspecialchars($profile['clubNom']) ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nom_abr">Nom abrégé *</label>
+                        <input type="text" id="nom_abr" name="nom_abr" value="<?= htmlspecialchars($profile['nom_abr']) ?>" required>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="nom_abr">Nom abrégé</label>
-                    <input type="text" id="nom_abr" name="nom_abr" value="<?= htmlspecialchars($profile['nom_abr']) ?>" readonly>
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="3"><?= htmlspecialchars($profile['description']) ?></textarea>
                 </div>
-            </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea id="description" name="description" rows="3" readonly><?= htmlspecialchars($profile['description']) ?></textarea>
-            </div>
-        </div>
-
-        <!-- Contact Information Section -->
-        <div class="form-section">
-            <div class="form-section-title">
-                <i class="fas fa-address-book"></i>
-                Informations de contact
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="email">Adresse e-mail</label>
-                    <input type="email" id="email" name="email" value="<?= htmlspecialchars($profile['email']) ?>" readonly>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email_contact">Adresse e-mail *</label>
+                        <input type="email" id="email_contact" name="email" value="<?= htmlspecialchars($profile['email']) ?>" required>
+                        <small style="color: #6b7280; font-size: 0.8rem; margin-top: 5px; display: block;">
+                            <i class="fas fa-info-circle"></i> Cette adresse sera utilisée pour l'expédition des emails
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label for="nom_utilisateur_contact">Nom d'utilisateur *</label>
+                        <input type="text" id="nom_utilisateur_contact" name="nom_utilisateur" value="<?= htmlspecialchars($profile['nom_utilisateur']) ?>" required>
+                        <small style="color: #6b7280; font-size: 0.8rem; margin-top: 5px; display: block;">
+                            <i class="fas fa-info-circle"></i> Nom d'utilisateur pour la connexion
+                        </small>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="nom_utilisateur">Nom d'utilisateur</label>
-                    <input type="text" id="nom_utilisateur" name="nom_utilisateur" value="<?= htmlspecialchars($profile['nom_utilisateur']) ?>" readonly>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button type="submit" name="update_club_info" class="btn-save">
+                        <i class="fas fa-save"></i> Sauvegarder les informations du club
+                    </button>
                 </div>
-            </div>
+            </form>
         </div>
 
         <!-- Mailing Configuration Section -->
@@ -675,29 +889,41 @@ if(isset($_POST['update_mail_config'])) {
                 <h4><i class="fas fa-info-circle"></i> Configuration actuelle</h4>
                 <p>Serveur: <?= htmlspecialchars($profile['serveur_smtp'] ?? 'Non configuré') ?> | Port: <?= htmlspecialchars($profile['port_smtp'] ?? 'Non configuré') ?> | Expéditeur: <?= htmlspecialchars($profile['email'] ?? 'Non configuré') ?></p>
             </div>
+            
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                <p style="color: #92400e; font-size: 0.9rem; margin: 0;">
+                    <i class="fas fa-info-circle"></i> <strong>Note :</strong> Remplissez seulement les champs que vous souhaitez modifier. 
+                    L'API key ne sera mise à jour que si vous en saisissez une nouvelle.
+                </p>
+            </div>
 
             <form method="post">
                 <div class="mail-config-grid">
                     <div class="form-group">
-                        <label for="mail_host">Serveur SMTP *</label>
-                        <input type="text" id="mail_host" name="mail_host" value="<?= htmlspecialchars($profile['serveur_smtp'] ?? '') ?>" placeholder="smtp.gmail.com" required>
+                        <label for="mail_host">Serveur SMTP</label>
+                        <input type="text" id="mail_host" name="mail_host" value="<?= htmlspecialchars($profile['serveur_smtp'] ?? '') ?>" placeholder="smtp.gmail.com">
                     </div>
                     <div class="form-group">
-                        <label for="mail_port">Port SMTP *</label>
-                        <input type="number" id="mail_port" name="mail_port" value="<?= htmlspecialchars($profile['port_smtp'] ?? '') ?>" placeholder="587" required>
+                        <label for="mail_port">Port SMTP</label>
+                        <input type="number" id="mail_port" name="mail_port" value="<?= htmlspecialchars($profile['port_smtp'] ?? '') ?>" placeholder="587">
                     </div>
                     <div class="form-group">
-                        <label for="mail_username">Nom d'utilisateur SMTP *</label>
-                        <input type="text" id="mail_username" name="mail_username" value="<?= htmlspecialchars($profile['nom_smtp'] ?? '') ?>" placeholder="votre-email@gmail.com" required>
+                        <label for="mail_username">Nom d'utilisateur SMTP</label>
+                        <input type="text" id="mail_username" name="mail_username" value="<?= htmlspecialchars($profile['nom_smtp'] ?? '') ?>" placeholder="votre-email@gmail.com">
                         <small style="color: #6b7280; font-size: 0.8rem; margin-top: 5px; display: block;">
                             <i class="fas fa-info-circle"></i> Adresse email utilisée pour l'authentification SMTP
                         </small>
                     </div>
                     <div class="form-group">
-                        <label for="mail_password">Mot de passe/API Key *</label>
-                        <input type="password" id="mail_password" name="mail_password" value="<?= htmlspecialchars($profile['api_key'] ?? '') ?>" placeholder="Votre mot de passe ou clé API" required>
+                        <label for="mail_password">Mot de passe/API Key</label>
+                        <input type="password" id="mail_password" name="mail_password" value="" placeholder="Votre mot de passe ou clé API">
                         <small style="color: #6b7280; font-size: 0.8rem; margin-top: 5px; display: block;">
                             <i class="fas fa-info-circle"></i> Mot de passe ou clé API de l'adresse SMTP
+                            <?php if (!empty($profile['api_key_encrypted'])): ?>
+                                <br><i class="fas fa-lock"></i> Une clé API est déjà configurée. Saisissez une nouvelle clé pour la remplacer.
+                            <?php else: ?>
+                                <br><i class="fas fa-info-circle"></i> Laissez vide pour conserver la clé actuelle.
+                            <?php endif; ?>
                         </small>
                     </div>
                 </div>
@@ -710,10 +936,10 @@ if(isset($_POST['update_mail_config'])) {
                             <input type="text" value="<?= htmlspecialchars($profile['email']) ?>" readonly style="background: #f9fafb; color: #6b7280;">
                         </div>
                         <div class="form-group">
-                            <label for="mail_sender_name">Nom expéditeur *</label>
+                            <label for="mail_sender_name">Nom expéditeur</label>
                             <input type="text" id="mail_sender_name" name="mail_sender_name" 
                                    value="<?= htmlspecialchars($profile['nom_expediteur'] ?? $profile['clubNom']) ?>" 
-                                   placeholder="<?= htmlspecialchars($profile['clubNom']) ?>" required>
+                                   placeholder="<?= htmlspecialchars($profile['clubNom']) ?>">
                             <small style="color: #6b7280; font-size: 0.8rem; margin-top: 5px; display: block;">
                                 <i class="fas fa-info-circle"></i> Nom qui apparaîtra comme expéditeur des emails
                             </small>
@@ -730,6 +956,41 @@ if(isset($_POST['update_mail_config'])) {
                     </button>
                 </div>
             </form>
+        </div>
+
+        <!-- Test Email Section -->
+        <div class="form-section" style="background: #f0fdf4; border: 1px solid #22c55e; margin-top: 20px;">
+            <div class="form-section-title" style="color: #166534;">
+                <i class="fas fa-paper-plane"></i>
+                Tester la configuration email
+            </div>
+            <p style="color: #166534; margin-bottom: 20px; font-size: 0.9rem;">
+                <i class="fas fa-info-circle"></i> Envoyez un email de test pour vérifier que votre configuration fonctionne correctement.
+            </p>
+            
+            <form method="post" style="display: flex; gap: 15px; align-items: end;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label for="test_email_address">Adresse email de test *</label>
+                    <input type="email" id="test_email_address" name="test_email_address" 
+                           placeholder="test@example.com" required 
+                           style="margin-bottom: 0;">
+                </div>
+<div>
+                    <button type="submit" name="test_email" class="btn-test" 
+                            style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); 
+                                   color: white; padding: 12px 24px; border: none; border-radius: 8px; 
+                                   cursor: pointer; font-weight: 600; transition: all 0.3s ease;
+                                   box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);">
+                        <i class="fas fa-paper-plane"></i> Envoyer un test
+                    </button>
+                </div>
+            </form>
+            
+            <div style="margin-top: 15px; padding: 12px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 6px;">
+                <p style="color: #0c4a6e; font-size: 0.85rem; margin: 0;">
+                    <i class="fas fa-lightbulb"></i> <strong>Conseil :</strong> Utilisez votre propre adresse email pour recevoir le test et vérifier que tout fonctionne correctement.
+                </p>
+            </div>
         </div>
     </div>
 </div>

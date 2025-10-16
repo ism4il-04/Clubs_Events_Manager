@@ -14,9 +14,19 @@ use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
 // Get club email configuration
-$clubConfigStmt = $conn->prepare("SELECT serveur_smtp, port_smtp, nom_smtp, api_key, nom_expediteur, email FROM organisateur NATURAL JOIN utilisateurs WHERE id = ?");
+$clubConfigStmt = $conn->prepare("SELECT serveur_smtp, port_smtp, nom_smtp, api_key_encrypted, nom_expediteur, email FROM organisateur NATURAL JOIN utilisateurs WHERE id = ?");
 $clubConfigStmt->execute([$_SESSION['id']]);
 $clubConfig = $clubConfigStmt->fetch(PDO::FETCH_ASSOC);
+
+// Decryption function for API key
+function decrypt_api_key($encrypted_api_key) {
+    if (empty($encrypted_api_key)) return '';
+    $key = hash('sha256', 'clubs_events_manager_secret_key_2024', true);
+    $data = base64_decode($encrypted_api_key);
+    $iv = substr($data, 0, 16);
+    $encrypted = substr($data, 16);
+    return openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
+}
 
 function envoyerMail ($email,$resultat,$nom,$prenom,$sujetParam = null,$corpsParam = null){
 
@@ -41,7 +51,7 @@ function envoyerMail ($email,$resultat,$nom,$prenom,$sujetParam = null,$corpsPar
             $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
             $mail->SMTPSecure = 'tls';   
             $mail->Username   = $clubConfig['nom_smtp'];               //SMTP username
-            $mail->Password   = $clubConfig['api_key'];                //SMTP password
+            $mail->Password   = decrypt_api_key($clubConfig['api_key_encrypted']); //SMTP password
             $mail->Port       = $clubConfig['port_smtp'];
             $mail->From       = $clubConfig['email']; 
             $mail->FromName   = $clubConfig['nom_expediteur'] ?? $clubConfig['email'];
