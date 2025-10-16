@@ -169,6 +169,7 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
         <div class="tab active" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
         <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
+        <div class="tab" onclick="navigateTo('profile_club.php')">Mon Profile</div>
     </div>
     
     <div class="events-container">

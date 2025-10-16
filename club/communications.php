@@ -9,14 +9,18 @@ require_once "../includes/db.php";
 include "../includes/header.php";
 
 require_once '../vendor/autoload.php';
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
+// Get club email configuration
+$clubConfigStmt = $conn->prepare("SELECT serveur_smtp, port_smtp, nom_smtp, api_key, nom_expediteur, email FROM organisateur NATURAL JOIN utilisateurs WHERE id = ?");
+$clubConfigStmt->execute([$_SESSION['id']]);
+$clubConfig = $clubConfigStmt->fetch(PDO::FETCH_ASSOC);
+
 function envoyerMail ($email,$resultat,$nom,$prenom,$sujetParam = null,$corpsParam = null){
 
+    global $clubConfig;
     $mail = new PHPMailer(true);
         // Use custom subject/body when provided, otherwise fall back to legacy templates
         if ($sujetParam !== null && $corpsParam !== null) {
@@ -33,15 +37,15 @@ function envoyerMail ($email,$resultat,$nom,$prenom,$sujetParam = null,$corpsPar
         try {
             //Server settings
             $mail->isSMTP();                                            //Send using SMTP
-            $mail->Host       = $_ENV["HOST"];                     //Set the SMTP server to send through
+            $mail->Host       = $clubConfig['serveur_smtp'];           //Set the SMTP server to send through
             $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
             $mail->SMTPSecure = 'tls';   
-            $mail->Username   = $_ENV["USERNAME"];                     //SMTP username
-            $mail->Password   = $_ENV["API_KEY"];                              //SMTP password
-            $mail->Port       = $_ENV["PORT"];
-            $mail->From       = $_ENV["FROM"]; 
-            $mail->FromName   = $_ENV["FROM_NAME"];
-            $mail->addReplyTo($_ENV["REPLY_TO"]); //l'adresse à répondre
+            $mail->Username   = $clubConfig['nom_smtp'];               //SMTP username
+            $mail->Password   = $clubConfig['api_key'];                //SMTP password
+            $mail->Port       = $clubConfig['port_smtp'];
+            $mail->From       = $clubConfig['email']; 
+            $mail->FromName   = $clubConfig['nom_expediteur'] ?? $clubConfig['email'];
+            $mail->addReplyTo($clubConfig['email']); //l'adresse à répondre
             $mail->addAddress($email);
             $mail->Body    = $corps;
             $mail->Subject = $sujet;
@@ -160,6 +164,7 @@ function fetchParticipants($conn,$eventFilter='') {
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab active" onclick="navigateTo('communications.php')">Communications</div>
         <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
+        <div class="tab" onclick="navigateTo('profile_club.php')">Mon Profile</div>
     </div>
 
     <div class="events-container">
