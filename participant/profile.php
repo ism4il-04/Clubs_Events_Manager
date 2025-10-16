@@ -35,7 +35,7 @@ if(isset($_POST['upload'])){
                 $uploadError = "Le fichier est trop volumineux. Taille maximale: 5MB.";
             } else {
                 // Set upload directory relative to current file
-                $uploadDir = "uploads/";
+                $uploadDir = "../assets/photo/";
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
@@ -43,9 +43,10 @@ if(isset($_POST['upload'])){
                 // Generate unique filename
                 $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
                 $filename = uniqid('profile_' . $_SESSION['id'] . '_') . '.' . $extension;
-                $targetPath = $uploadDir . $filename;
+                $targetPath = "assets/photo/" . $filename;
+                $fullTargetPath = $uploadDir . $filename;
 
-                if (move_uploaded_file($_FILES['file']['tmp_name'], $targetPath)) {
+                if (move_uploaded_file($_FILES['file']['tmp_name'], $fullTargetPath)) {
                     // Delete old photo if exists
                     if (!empty($profile['photo']) && file_exists($uploadDir . $profile['photo'])) {
                         unlink($uploadDir . $profile['photo']);
@@ -53,7 +54,7 @@ if(isset($_POST['upload'])){
 
                     // Update database
                     $photo = $conn->prepare("UPDATE etudiants SET photo=? WHERE id = ?");
-                    if ($photo->execute([$filename, $_SESSION['id']])) {
+                    if ($photo->execute([$targetPath, $_SESSION['id']])) {
                         $uploadMessage = "Photo téléchargée avec succès !";
                         // Refresh profile data
                         $profileStmt->execute([$_SESSION['id']]);
@@ -74,10 +75,12 @@ if(isset($_POST['upload'])){
 // Handle photo removal
 if(isset($_POST['remove_photo'])) {
     if (!empty($profile['photo'])) {
-        $uploadDir = "uploads/";
+        $uploadDir = "../assets/photo/";
+        // Extract just the filename from the stored path
+        $filename = basename($profile['photo']);
         // Delete file from server
-        if (file_exists($uploadDir . $profile['photo'])) {
-            unlink($uploadDir . $profile['photo']);
+        if (file_exists($uploadDir . $filename)) {
+            unlink($uploadDir . $filename);
         }
 
         // Update database
@@ -483,7 +486,7 @@ if(isset($_POST['remove_photo'])) {
             <div class="photo-upload-section">
                 <div class="profile-photo-container">
                     <?php if (!empty($profile['photo'])): ?>
-                        <img src="uploads/<?= htmlspecialchars($profile['photo']) ?>"
+                        <img src="../<?= htmlspecialchars($profile['photo']) ?>"
                              alt="Photo de profil"
                              class="profile-photo"
                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
