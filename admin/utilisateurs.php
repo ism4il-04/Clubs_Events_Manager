@@ -27,7 +27,7 @@ $stmt = $conn->prepare("SELECT u.*,o.description,
     LEFT JOIN admin a ON u.id = a.id
     LEFT JOIN organisateur o ON u.id = o.id
     LEFT JOIN etudiants e ON u.id = e.id
-    ORDER BY u.id DESC
+    ORDER BY u.id ASC
 ");
 $stmt->execute();
 $users = $stmt->fetchAll();
@@ -47,6 +47,7 @@ $message = $_GET['message'] ?? '';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         .container-admin {
             max-width: 1800px;
@@ -178,6 +179,16 @@ $message = $_GET['message'] ?? '';
             padding: 15px 20px;
             border-top: 1px solid #dee2e6;
         }
+        .badge-admin { background: #dc3545 !important; color: white; }
+        .badge-club { background: #ffc107 !important; color: #000; }
+        .badge-etudiant { background: #17a2b8 !important; color: white; }
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .modal-header .btn-close {
+            filter: invert(1);
+        }
     </style>
 </head>
 <body>
@@ -261,14 +272,7 @@ $message = $_GET['message'] ?? '';
                     <option value="etudiant">Étudiants</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <select id="statusFilter" class="form-select">
-                    <option value="">Tous les statuts</option>
-                    <option value="active">Actifs</option>
-                    <option value="inactive">Inactifs</option>
-                </select>
-            </div>
-            <div class="col-md-2">
+            <div class="col-md-5">
                 <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
                     <i class="fas fa-refresh me-1"></i>Réinitialiser
                 </button>
@@ -282,20 +286,17 @@ $message = $_GET['message'] ?? '';
             <table class="table table-hover mb-0" id="usersTable">
                 <thead class="table-light">
                     <tr>
-                        <th width="50">ID</th>
                         <th width="80">Avatar</th>
                         <th>Utilisateur</th>
                         <th>Rôle</th>
                         <th>Informations</th>
                         <th width="120">Statistiques</th>
-                        <th width="120">Statut</th>
                         <th width="150" class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($users as $user): ?>
                     <tr class="user-row" data-role="<?= $user['role'] ?>" data-status="active">
-                        <td class="fw-bold text-muted">#<?= $user['id'] ?></td>
                         <td>
                             <?php if ($user['role'] === 'club' && $user['logo']): ?>
                                 <img src="../<?= htmlspecialchars($user['logo']) ?>" 
@@ -391,42 +392,9 @@ $message = $_GET['message'] ?? '';
                                 </span>
                             <?php endif; ?>
                         </td>
-                        <td>
-                            <span class="status-indicator status-active"></span>
-                            <span class="small text-success">Actif</span>
-                            <div class="small text-muted">
-                                <?php if ($user['role'] === 'etudiant' && $user['dateNaissance']): ?>
-                                    <?= date('d/m/Y', strtotime($user['dateNaissance'])) ?>
-                                <?php endif; ?>
-                            </div>
-                        </td>
                         <td class="text-center">
                             <div class="action-buttons justify-content-center">
-                                <form method="POST" class="d-inline">
-                                    <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                                    <input type="hidden" name="action" value="editer">
-                                    <button type="submit" class="btn btn-warning btn-table" title="Modifier">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                </form>
-                                
-                                <?php if ($user['id'] != $_SESSION['id']): ?>
-                                <form method="POST" class="d-inline">
-                                    <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                                    <input type="hidden" name="action" value="supprimer">
-                                    <button type="submit" class="btn btn-danger btn-table" 
-                                            title="Supprimer"
-                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                                <?php else: ?>
-                                <span class="btn btn-outline-secondary btn-table disabled" title="Vous">
-                                    <i class="fas fa-user"></i>
-                                </span>
-                                <?php endif; ?>
-                                
-                                <button class="btn btn-info btn-table" title="Voir le profil" onclick="viewProfile(<?= $user['id'] ?>)">
+                                <button class="btn btn-info btn-table" title="Voir les détails" onclick="viewUserDetails(<?= $user['id'] ?>)">
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
@@ -435,28 +403,6 @@ $message = $_GET['message'] ?? '';
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="pagination-container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <span class="text-muted small">
-                        Affichage de <strong><?= count($users) ?></strong> utilisateur(s)
-                    </span>
-                </div>
-                <div class="col-md-6">
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination pagination-sm justify-content-end mb-0">
-                            <li class="page-item disabled"><a class="page-link" href="#">Précédent</a></li>
-                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                            <li class="page-item"><a class="page-link" href="#">2</a></li>
-                            <li class="page-item"><a class="page-link" href="#">3</a></li>
-                            <li class="page-item"><a class="page-link" href="#">Suivant</a></li>
-                        </ul>
-                    </nav>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -495,25 +441,21 @@ function hideForm() {
 function filterTable() {
     const searchText = document.getElementById('searchInput').value.toLowerCase();
     const roleFilter = document.getElementById('roleFilter').value;
-    const statusFilter = document.getElementById('statusFilter').value;
     
     document.querySelectorAll('#usersTable .user-row').forEach(row => {
         const text = row.textContent.toLowerCase();
         const role = row.getAttribute('data-role');
-        const status = row.getAttribute('data-status');
         
         const matchesSearch = text.includes(searchText);
         const matchesRole = !roleFilter || role === roleFilter;
-        const matchesStatus = !statusFilter || status === statusFilter;
         
-        row.style.display = (matchesSearch && matchesRole && matchesStatus) ? '' : 'none';
+        row.style.display = (matchesSearch && matchesRole) ? '' : 'none';
     });
 }
 
 function clearFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('roleFilter').value = '';
-    document.getElementById('statusFilter').value = '';
     filterTable();
 }
 
@@ -522,9 +464,115 @@ function exportTable() {
     alert('Fonction d\'export à implémenter');
 }
 
-function viewProfile(userId) {
-    // Simulation de vue profil - À implémenter
-    alert('Visualisation du profil utilisateur #' + userId);
+
+function viewUserDetails(userId) {
+    // Récupérer les données de l'utilisateur et afficher dans une modal
+    fetch(`get_user_details.php?id=${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showUserDetailsModal(data.user);
+            } else {
+                alert('Erreur lors du chargement des détails: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du chargement des détails de l\'utilisateur');
+        });
+}
+
+function showUserDetailsModal(user) {
+    // Créer le contenu de la modal
+    const modalContent = `
+        <div class="modal fade" id="userDetailsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-user me-2"></i>Détails de l'utilisateur
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                ${user.avatar ? 
+                                    `<img src="../${user.avatar}" class="img-fluid rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;" alt="Avatar">` :
+                                    `<div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 120px; height: 120px; font-size: 2rem;">
+                                        ${user.nom_utilisateur ? user.nom_utilisateur.substring(0, 2).toUpperCase() : 'U'}
+                                    </div>`
+                                }
+                                <h4>${user.display_name || user.nom_utilisateur}</h4>
+                                <span class="badge badge-${user.role}">${user.role}</span>
+                            </div>
+                            <div class="col-md-8">
+                                <h6>Informations générales</h6>
+                                <table class="table table-sm">
+                                    <tr><td><strong>ID:</strong></td><td>#${user.id}</td></tr>
+                                    <tr><td><strong>Nom d'utilisateur:</strong></td><td>${user.nom_utilisateur}</td></tr>
+                                    <tr><td><strong>Email:</strong></td><td>${user.email}</td></tr>
+                                    ${user.role === 'etudiant' ? `
+                                        <tr><td><strong>Nom complet:</strong></td><td>${user.prenom} ${user.nom}</td></tr>
+                                        <tr><td><strong>Filière:</strong></td><td>${user.filiere || 'Non défini'}</td></tr>
+                                        <tr><td><strong>Année:</strong></td><td>${user.annee || 'Non défini'}</td></tr>
+                                        <tr><td><strong>Téléphone:</strong></td><td>${user.telephone || 'Non défini'}</td></tr>
+                                    ` : ''}
+                                    ${user.role === 'club' ? `
+                                        <tr><td><strong>Nom du club:</strong></td><td>${user.clubNom}</td></tr>
+                                        <tr><td><strong>Nom abrégé:</strong></td><td>${user.nom_abr || 'Non défini'}</td></tr>
+                                        <tr><td><strong>Description:</strong></td><td>${user.description || 'Aucune description'}</td></tr>
+                                    ` : ''}
+                                </table>
+                                
+                                <h6>Statistiques</h6>
+                                <div class="row">
+                                    ${user.role === 'club' ? `
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h4 text-primary">${user.nb_evenements || 0}</div>
+                                                <small>Événements</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h4 text-warning">${user.nb_events_en_attente || 0}</div>
+                                                <small>En attente</small>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    ${user.role === 'etudiant' ? `
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h4 text-info">${user.nb_participations || 0}</div>
+                                                <small>Participations</small>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Supprimer l'ancienne modal si elle existe
+    const existingModal = document.getElementById('userDetailsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Ajouter la nouvelle modal au DOM
+    document.body.insertAdjacentHTML('beforeend', modalContent);
+    
+    // Afficher la modal
+    const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+    modal.show();
 }
 
 // Événements
@@ -532,7 +580,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filtrage en temps réel
     document.getElementById('searchInput').addEventListener('input', filterTable);
     document.getElementById('roleFilter').addEventListener('change', filterTable);
-    document.getElementById('statusFilter').addEventListener('change', filterTable);
     
     // Auto-hide alerts
     const alerts = document.querySelectorAll('.alert');
@@ -542,14 +589,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert.style.opacity = '0';
             setTimeout(() => alert.remove(), 500);
         }, 5000);
-    });
-    
-    // Tri des colonnes (basique)
-    document.querySelectorAll('th').forEach(header => {
-        header.style.cursor = 'pointer';
-        header.addEventListener('click', () => {
-            alert('Tri à implémenter pour: ' + header.textContent);
-        });
     });
 });
 
