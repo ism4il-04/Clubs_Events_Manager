@@ -176,9 +176,8 @@ if(isset($_POST['update_mail_config'])) {
     $api_key = trim($_POST['mail_password']);
     $nom_expediteur = trim($_POST['mail_sender_name']);
     
-    if (empty($serveur_smtp) || empty($port_smtp) || empty($nom_smtp) || empty($nom_expediteur)) {
-        $mailError = "Tous les champs de configuration email sont obligatoires.";
-    } else {
+    // No validation required - allow partial updates
+    if (true) {
         try {
             $conn->beginTransaction();
             
@@ -187,7 +186,26 @@ if(isset($_POST['update_mail_config'])) {
             $checkAdmin->execute([$_SESSION['id']]);
             
             if ($checkAdmin->fetch()) {
-                // Update existing admin record
+                // Update existing admin record - only update fields that are not empty
+                $updateFields = [];
+                $updateValues = [];
+                
+                if (!empty($serveur_smtp)) {
+                    $updateFields[] = "serveur_smtp = ?";
+                    $updateValues[] = $serveur_smtp;
+                }
+                if (!empty($port_smtp)) {
+                    $updateFields[] = "port_smtp = ?";
+                    $updateValues[] = $port_smtp;
+                }
+                if (!empty($nom_smtp)) {
+                    $updateFields[] = "nom_smtp = ?";
+                    $updateValues[] = $nom_smtp;
+                }
+                if (!empty($nom_expediteur)) {
+                    $updateFields[] = "nom_expediteur = ?";
+                    $updateValues[] = $nom_expediteur;
+                }
                 if (!empty($api_key)) {
                     // Encrypt API key
                     $key = hash('sha256', 'clubs_events_manager_secret_key_2024', true);
@@ -195,15 +213,41 @@ if(isset($_POST['update_mail_config'])) {
                     $encrypted = openssl_encrypt($api_key, 'AES-256-CBC', $key, 0, $iv);
                     $api_key_encrypted = base64_encode($iv . $encrypted);
                     
-                    $updateEmail = $conn->prepare("UPDATE admin SET serveur_smtp = ?, port_smtp = ?, nom_smtp = ?, api_key_encrypted = ?, nom_expediteur = ? WHERE id = ?");
-                    $updateEmail->execute([$serveur_smtp, $port_smtp, $nom_smtp, $api_key_encrypted, $nom_expediteur, $_SESSION['id']]);
-                } else {
-                    // Keep existing API key
-                    $updateEmail = $conn->prepare("UPDATE admin SET serveur_smtp = ?, port_smtp = ?, nom_smtp = ?, nom_expediteur = ? WHERE id = ?");
-                    $updateEmail->execute([$serveur_smtp, $port_smtp, $nom_smtp, $nom_expediteur, $_SESSION['id']]);
+                    $updateFields[] = "api_key_encrypted = ?";
+                    $updateValues[] = $api_key_encrypted;
+                }
+                
+                if (!empty($updateFields)) {
+                    $updateValues[] = $_SESSION['id'];
+                    $updateEmail = $conn->prepare("UPDATE admin SET " . implode(", ", $updateFields) . " WHERE id = ?");
+                    $updateEmail->execute($updateValues);
                 }
             } else {
-                // Insert new admin record
+                // Insert new admin record - only insert fields that are not empty
+                $insertFields = ["id"];
+                $insertValues = [$_SESSION['id']];
+                $placeholders = ["?"];
+                
+                if (!empty($serveur_smtp)) {
+                    $insertFields[] = "serveur_smtp";
+                    $insertValues[] = $serveur_smtp;
+                    $placeholders[] = "?";
+                }
+                if (!empty($port_smtp)) {
+                    $insertFields[] = "port_smtp";
+                    $insertValues[] = $port_smtp;
+                    $placeholders[] = "?";
+                }
+                if (!empty($nom_smtp)) {
+                    $insertFields[] = "nom_smtp";
+                    $insertValues[] = $nom_smtp;
+                    $placeholders[] = "?";
+                }
+                if (!empty($nom_expediteur)) {
+                    $insertFields[] = "nom_expediteur";
+                    $insertValues[] = $nom_expediteur;
+                    $placeholders[] = "?";
+                }
                 if (!empty($api_key)) {
                     // Encrypt API key
                     $key = hash('sha256', 'clubs_events_manager_secret_key_2024', true);
@@ -211,11 +255,14 @@ if(isset($_POST['update_mail_config'])) {
                     $encrypted = openssl_encrypt($api_key, 'AES-256-CBC', $key, 0, $iv);
                     $api_key_encrypted = base64_encode($iv . $encrypted);
                     
-                    $insertEmail = $conn->prepare("INSERT INTO admin (id, serveur_smtp, port_smtp, nom_smtp, api_key_encrypted, nom_expediteur) VALUES (?, ?, ?, ?, ?, ?)");
-                    $insertEmail->execute([$_SESSION['id'], $serveur_smtp, $port_smtp, $nom_smtp, $api_key_encrypted, $nom_expediteur]);
-                } else {
-                    $insertEmail = $conn->prepare("INSERT INTO admin (id, serveur_smtp, port_smtp, nom_smtp, nom_expediteur) VALUES (?, ?, ?, ?, ?)");
-                    $insertEmail->execute([$_SESSION['id'], $serveur_smtp, $port_smtp, $nom_smtp, $nom_expediteur]);
+                    $insertFields[] = "api_key_encrypted";
+                    $insertValues[] = $api_key_encrypted;
+                    $placeholders[] = "?";
+                }
+                
+                if (count($insertFields) > 1) { // More than just the id field
+                    $insertEmail = $conn->prepare("INSERT INTO admin (" . implode(", ", $insertFields) . ") VALUES (" . implode(", ", $placeholders) . ")");
+                    $insertEmail->execute($insertValues);
                 }
             }
             
@@ -878,7 +925,7 @@ if(isset($_POST['test_email'])) {
             <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
                 <p style="color: #92400e; font-size: 0.9rem; margin: 0;">
                     <i class="fas fa-info-circle"></i> <strong>Note :</strong> Remplissez seulement les champs que vous souhaitez modifier. 
-                    L'API key ne sera mise à jour que si vous en saisissez une nouvelle.
+                    Les champs vides ne seront pas mis à jour. L'API key ne sera mise à jour que si vous en saisissez une nouvelle.
                 </p>
             </div>
 
