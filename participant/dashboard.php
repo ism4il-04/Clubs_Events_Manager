@@ -25,9 +25,13 @@ foreach ($events as $event) {
 }
 $categories = array_unique($categories);
 
-$participations_stmt = $conn->prepare("SELECT evenement_id FROM participation WHERE etudiant_id = ?");
+$participations_stmt = $conn->prepare("SELECT evenement_id, etat FROM participation WHERE etudiant_id = ?");
 $participations_stmt->execute([$_SESSION['id']]);
-$participations = $participations_stmt->fetchAll(PDO::FETCH_COLUMN);
+$participations = $participations_stmt->fetchAll(PDO::FETCH_ASSOC);
+$participationStatus = [];
+foreach ($participations as $p) {
+    $participationStatus[$p['evenement_id']] = $p['etat'];
+}
 
 // Prepare user information for modal
 $userInfo = [
@@ -540,7 +544,8 @@ $userInfo = [
         }
         $renderedIds[] = $event['idEvent'];
 
-        $alreadyRequested = in_array($event['idEvent'], $participations);
+        $alreadyRequested = isset($participationStatus[$event['idEvent']]) && in_array($participationStatus[$event['idEvent']], ['En Attente', 'Accepté', 'Demande d\'annulation']);
+        $currentStatus = $participationStatus[$event['idEvent']] ?? 'Non participant';
         $event['registeredCount'] = $registrationCounts[$event['idEvent']] ?? 0;
         ?>
         <div class="card" data-category="<?= htmlspecialchars($event['categorie'] ?? 'Non spécifiée') ?>" data-event-id="<?= $event['idEvent'] ?>">
@@ -606,10 +611,14 @@ $userInfo = [
 
             <div class="footer">
                 <div class="footer-content">
-                    <?php if ($alreadyRequested): ?>
-                        <span class="participation-status">Participation demandée</span>
+                    <?php if ($currentStatus === 'En Attente'): ?>
+                        <span class="participation-status">En Attente</span>
+                    <?php elseif ($currentStatus === 'Accepté'): ?>
+                        <span class="participation-status">Accepté</span>
+                    <?php elseif ($currentStatus === 'Demande d\'annulation'): ?>
+                        <span class="participation-status">Demande d'annulation en cours</span>
                     <?php endif; ?>
-                    <button type="button" class="participate-btn" onclick="openModal(<?= htmlspecialchars(json_encode($event)) ?>, <?= $alreadyRequested ? 'true' : 'false' ?>)">Voir détails</button>
+                    <button type="button" class="participate-btn" onclick="openModal(<?= htmlspecialchars(json_encode($event)) ?>, '<?= $currentStatus ?>')">Voir détails</button>
                 </div>
             </div>
         </div>
@@ -694,8 +703,8 @@ $userInfo = [
             return;
         }
 
-        window.openModal = function(event, alreadyRequested) {
-            console.log('openModal called with:', { event, alreadyRequested });
+        window.openModal = function(event, status) {
+            console.log('openModal called with:', { event, status });
 
             const modalTitle = document.getElementById('modalTitle');
             const modalClub = document.getElementById('modalClub');
@@ -762,14 +771,30 @@ $userInfo = [
                 return;
             }
 
-            const hasAlreadyRequested = alreadyRequested === true || alreadyRequested === 1 || alreadyRequested === "true";
-
-            if (hasAlreadyRequested) {
+            if (status === 'En Attente') {
                 participationFormSection.style.display = 'none';
                 submitBtn.style.display = 'none';
                 cancelBtn.style.display = 'inline-block';
+                cancelBtn.textContent = 'Annuler la demande';
+                cancelBtn.onclick = function() {
+                    cancelParticipation('En Attente');
+                };
+            } else if (status === 'Accepté') {
+                participationFormSection.style.display = 'none';
+                submitBtn.style.display = 'none';
+                cancelBtn.style.display = 'inline-block';
+                cancelBtn.textContent = 'Demander annulation';
+                cancelBtn.onclick = function() {
+                    cancelParticipation('Accepté');
+                };
+            } else if (status === 'Demande d\'annulation') {
+                participationFormSection.style.display = 'none';
+                submitBtn.style.display = 'none';
+                cancelBtn.style.display = 'inline-block';
+                cancelBtn.textContent = 'Demande d\'annulation en cours';
+                cancelBtn.disabled = true;
             } else {
-                // Check if event is full (only if maxPlaces is defined and not null/unlimited)
+                // Check if event is full
                 const isEventFull = (maxPlaces !== null && maxPlaces !== undefined && maxPlaces !== '') && (registeredCount >= maxPlaces);
 
                 if (isEventFull) {
@@ -814,14 +839,21 @@ $userInfo = [
             }
         });
 
-        window.cancelParticipation = function() {
+        window.cancelParticipation = function(status) {
             const eventId = document.getElementById('modalEventId');
             if (!eventId) {
                 console.error('Modal event ID element not found!');
                 return;
             }
 
-            if (confirm('Êtes-vous sûr de vouloir annuler votre demande de participation ?')) {
+            let confirmMessage = '';
+            if (status === 'En Attente') {
+                confirmMessage = 'Êtes-vous sûr de vouloir annuler votre demande de participation ?';
+            } else if (status === 'Accepté') {
+                confirmMessage = 'Êtes-vous sûr de vouloir demander l\'annulation de votre participation ?';
+            }
+
+            if (confirmMessage && confirm(confirmMessage)) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = 'mes_demandes.php';

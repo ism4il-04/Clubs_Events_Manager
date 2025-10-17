@@ -424,9 +424,14 @@ $selectedEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="event-detail-item">
                             <i class="fa-regular fa-calendar"></i>
                             <span>
-                                <?= date('Y-m-d', strtotime($event['dateDepart'])) ?> au
-                                <?= date('Y-m-d', strtotime($event['dateFin'])) ?> •
-                                <strong><?= htmlspecialchars($event['heureDepart']) ?> - <?= htmlspecialchars($event['heureFin']) ?></strong>
+                                <?php if ($event['dateDepart'] === $event['dateFin']): ?>
+                                    <?= date('Y-m-d', strtotime($event['dateDepart'])) ?> •
+                                    <strong><?= htmlspecialchars($event['heureDepart']) ?> - <?= htmlspecialchars($event['heureFin']) ?></strong>
+                                <?php else: ?>
+                                    <?= date('Y-m-d', strtotime($event['dateDepart'])) ?> au
+                                    <?= date('Y-m-d', strtotime($event['dateFin'])) ?> •
+                                    <strong><?= htmlspecialchars($event['heureDepart']) ?> - <?= htmlspecialchars($event['heureFin']) ?></strong>
+                                <?php endif; ?>
                             </span>
                         </div>
                         <div class="event-detail-item">

@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['participer']) && isse
         }
 
         // Insert participation request
-        $insert_stmt = $conn->prepare("INSERT INTO participation (etudiant_id, evenement_id, date_demande) VALUES (?, ?, NOW())");
+        $insert_stmt = $conn->prepare("INSERT INTO participation (etudiant_id, evenement_id, date_demande, etat) VALUES (?, ?, NOW(), 'En attente')");
         if ($insert_stmt->execute([$etudiant_id, $event_id])) {
             header('Location: dashboard.php?success=1');
             exit;
@@ -44,14 +44,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['annuler']) && isset($
     $etudiant_id = $_SESSION['id'];
 
     try {
-        // Delete participation request
-        $delete_stmt = $conn->prepare("DELETE FROM participation WHERE etudiant_id = ? AND evenement_id = ?");
-        if ($delete_stmt->execute([$etudiant_id, $event_id])) {
-            header('Location: dashboard.php?cancelled=1');
-            exit;
+        // Check if participation is accepted
+        $check_stmt = $conn->prepare("SELECT etat FROM participation WHERE etudiant_id = ? AND evenement_id = ?");
+        $check_stmt->execute([$etudiant_id, $event_id]);
+        $currentStatus = $check_stmt->fetchColumn();
+
+        if ($currentStatus === 'Accepté') {
+            // Update status to 'Demande d'annulation'
+            $update_stmt = $conn->prepare("UPDATE participation SET etat = 'Demande d\'annulation' WHERE etudiant_id = ? AND evenement_id = ?");
+            if ($update_stmt->execute([$etudiant_id, $event_id])) {
+                header('Location: dashboard.php?cancel_requested=1');
+                exit;
+            } else {
+                header('Location: dashboard.php?error=cancel_failed');
+                exit;
+            }
         } else {
-            header('Location: dashboard.php?error=cancel_failed');
-            exit;
+            // Delete if not accepted
+            $delete_stmt = $conn->prepare("DELETE FROM participation WHERE etudiant_id = ? AND evenement_id = ?");
+            if ($delete_stmt->execute([$etudiant_id, $event_id])) {
+                header('Location: dashboard.php?cancelled=1');
+                exit;
+            } else {
+                header('Location: dashboard.php?error=cancel_failed');
+                exit;
+            }
         }
     } catch (PDOException $e) {
         header('Location: dashboard.php?error=database_error');

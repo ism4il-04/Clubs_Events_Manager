@@ -575,15 +575,9 @@ if(isset($_POST['remove_photo'])) {
                 <i class="fas fa-graduation-cap"></i>
                 Informations académiques
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="filiere">Filière</label>
-                    <input type="text" id="filiere" name="filiere" value="<?= htmlspecialchars($profile['filiere']) ?>" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="annee">Année</label>
-                    <input type="text" id="annee" name="annee" value="<?= htmlspecialchars($profile['annee']) ?> année" readonly>
-                </div>
+            <div class="form-group">
+                <label for="filiere_annee">Filière et Année</label>
+                <input type="text" id="filiere_annee" name="filiere_annee" value="<?= htmlspecialchars($profile['filiere'] . ' ' . $profile['annee'] . ' année') ?>" readonly>
             </div>
         </div>
     </div>

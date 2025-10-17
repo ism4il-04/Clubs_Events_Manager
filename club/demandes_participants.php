@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     
     try {
         traiterDemande($conn,$_POST["idEtu"],$_POST['idEve'], $_POST["action"]);
-        $message = $action === 'Accepté' ? "Demande validée avec succès." : "Demande refusée avec succès.";
+        $message = ($action === 'Accepté') ? "Demande validée avec succès." : (($action === 'Refusé') ? "Demande refusée avec succès." : "Demande d'annulation acceptée avec succès.");
         // Redirect to prevent form resubmission
         header("Location: demandes_participants.php?message=" . urlencode($message." ".$_POST["idEtu"]." ".$_POST["idEve"]." ".$_POST["action"]));
         exit();
@@ -23,11 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-function fetchDemandes($conn, $statusFilter = '', $eventFilter = '') {
+function fetchDemandes($conn, $statusFilter = '', $eventFilter = '', $type = 'participation') {
     $sql = "SELECT * FROM utilisateurs NATURAL JOIN etudiants JOIN participation ON etudiant_id = etudiants.id JOIN evenements ON evenement_id=evenements.idEvent WHERE organisateur_id=?";
     $params = [$_SESSION['id']];
     
-    if (!empty($statusFilter)) {
+    if ($type === 'cancellation') {
+        $sql .= " AND participation.etat = 'Demande d\'annulation'";
+    } elseif (!empty($statusFilter)) {
         $sql .= " AND participation.etat = ?";
         $params[] = $statusFilter;
     }
@@ -54,19 +56,19 @@ function traiterDemande($conn, $etu, $event, $rep) {
     // Update participation status
     $stmt = $conn->prepare("UPDATE participation SET etat = ? WHERE etudiant_id = ? AND evenement_id = ?");
     $stmt->execute([$rep, $etu, $event]);
-    
+
     // Get event details
     $stmt = $conn->prepare("SELECT places, status FROM evenements WHERE idEvent = ?");
     $stmt->execute([$event]);
     $eventData = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     // Only check if places is defined (not unlimited)
     if ($eventData && !empty($eventData['places'])) {
         // Count accepted participants
         $stmt = $conn->prepare("SELECT COUNT(*) as accepted FROM participation WHERE evenement_id = ? AND etat = 'Accepté'");
         $stmt->execute([$event]);
         $acceptedCount = $stmt->fetch(PDO::FETCH_ASSOC)['accepted'];
-        
+
         if ($rep === 'Accepté') {
             // If full, update status to Sold out
             if ($acceptedCount >= $eventData['places']) {
@@ -79,17 +81,29 @@ function traiterDemande($conn, $etu, $event, $rep) {
                 $stmt = $conn->prepare("UPDATE evenements SET status = 'Disponible' WHERE idEvent = ?");
                 $stmt->execute([$event]);
             }
+        } elseif ($rep === 'Annulé') {
+            // For cancellation, delete the participation record
+            $stmt = $conn->prepare("DELETE FROM participation WHERE etudiant_id = ? AND evenement_id = ?");
+            $stmt->execute([$etu, $event]);
+            // Decrease accepted count since it's cancelled
+            $acceptedCount--;
+            if ($eventData['status'] === 'Sold out' && $acceptedCount < $eventData['places']) {
+                $stmt = $conn->prepare("UPDATE evenements SET status = 'Disponible' WHERE idEvent = ?");
+                $stmt->execute([$event]);
+            }
         }
     }
-}
+} // ✅ <— missing closing brace was here
 
 // Get filter values
 $statusFilter = $_GET['status'] ?? '';
 $eventFilter = $_GET['event'] ?? '';
+$typeFilter = $_GET['type'] ?? '';
 $message = $_GET['message'] ?? '';
 
 $events = fetchEvents($conn);
-$demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
+$demandes = fetchDemandes($conn, $statusFilter, $eventFilter, $typeFilter);
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -196,9 +210,10 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                     <label for="statusFilter" class="form-label">Filtrer par statut</label>
                     <select id="statusFilter" name="status" class="form-select" onchange="this.form.submit()">
                         <option value="">Tous</option>
-                        <option value="En attente" <?= $statusFilter === 'En attente' ? 'selected' : '' ?>>En attente</option>
+                        <option value="En Attente" <?= $statusFilter === 'En Attente' ? 'selected' : '' ?>>En Attente</option>
                         <option value="Accepté" <?= $statusFilter === 'Accepté' ? 'selected' : '' ?>>Accepté</option>
                         <option value="Refusé" <?= $statusFilter === 'Refusé' ? 'selected' : '' ?>>Refusé</option>
+                        <option value="Demande d'annulation" <?= $statusFilter === 'Demande d\'annulation' ? 'selected' : '' ?>>Demande d'annulation</option>
                     </select>
                 </div>
 
@@ -209,6 +224,15 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                         <?php foreach ($events as $event): ?>
                         <option value="<?= htmlspecialchars($event['nomEvent']) ?>" <?= $eventFilter === $event['nomEvent'] ? 'selected' : '' ?>><?= htmlspecialchars($event['nomEvent']) ?></option>
                         <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="typeFilter" class="form-label">Type de demande</label>
+                    <select id="typeFilter" name="type" class="form-select" onchange="this.form.submit()">
+                        <option value="">Tous</option>
+                        <option value="participation" <?= ($_GET['type'] ?? '') === 'participation' ? 'selected' : '' ?>>Participation</option>
+                        <option value="cancellation" <?= ($_GET['type'] ?? '') === 'cancellation' ? 'selected' : '' ?>>Annulation</option>
                     </select>
                 </div>
                 
@@ -259,6 +283,12 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                                         case 'Refusé':
                                             $statusClass = 'rejected';
                                             break;
+                                        case 'Demande d\'annulation':
+                                            $statusClass = 'pending';
+                                            break;
+                                        case 'En Attente':
+                                            $statusClass = 'pending';
+                                            break;
                                         default:
                                             $statusClass = 'pending';
                                     }
@@ -268,19 +298,35 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                                 <td class="actions">
                                     <button class="btn btn-view" data-bs-toggle="modal" data-bs-target="#participantModal<?= $demande['id'] ?>">Voir détails</button>
                                     
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
-                                        <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
-                                        <input type="hidden" name="action" value="Accepté">
-                                        <button type="submit" class="btn btn-validate" onclick="return confirm('Êtes-vous sûr de vouloir valider cette demande ?')">Valider</button>
-                                    </form>
-                                    
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
-                                        <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
-                                        <input type="hidden" name="action" value="Refusé">
-                                        <button type="submit" class="btn btn-reject" >Refuser</button>
-                                    </form>
+                                    <?php if ($demande['etat'] === 'Demande d\'annulation'): ?>
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                            <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                            <input type="hidden" name="action" value="Annulé">
+                                            <button type="submit" class="btn btn-validate" onclick="return confirm('Êtes-vous sûr de vouloir accepter l\'annulation ?')">Accepter annulation</button>
+                                        </form>
+                                        
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                            <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                            <input type="hidden" name="action" value="Accepté">
+                                            <button type="submit" class="btn btn-reject" onclick="return confirm('Êtes-vous sûr de vouloir rejeter l\'annulation ?')">Rejeter annulation</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                            <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                            <input type="hidden" name="action" value="Accepté">
+                                            <button type="submit" class="btn btn-validate" onclick="return confirm('Êtes-vous sûr de vouloir valider cette demande ?')">Valider</button>
+                                        </form>
+                                        
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                            <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                            <input type="hidden" name="action" value="Refusé">
+                                            <button type="submit" class="btn btn-reject" onclick="return confirm('Êtes-vous sûr de vouloir refuser cette demande ?')">Refuser</button>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -343,6 +389,12 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                                                             case 'Refusé':
                                                                 $statusClass = 'rejected';
                                                                 break;
+                                                            case 'Demande d\'annulation':
+                                                                $statusClass = 'pending';
+                                                                break;
+                                                            case 'En Attente':
+                                                                $statusClass = 'pending';
+                                                                break;
                                                             default:
                                                                 $statusClass = 'pending';
                                                         }
@@ -358,18 +410,33 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
-                                        <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
-                                        <input type="hidden" name="action" value="Accepté">
-                                        <button type="submit" class="btn btn-validate" onclick="return confirm('Êtes-vous sûr de vouloir valider cette demande ?')">Valider la demande</button>
-                                    </form>
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
-                                        <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
-                                        <input type="hidden" name="action" value="Refusé">
-                                        <button type="submit" class="btn btn-reject" onclick="return confirm('Êtes-vous sûr de vouloir refuser cette demande ?')">Refuser la demande</button>
-                                    </form>
+                                    <?php if ($demande['etat'] === 'Demande d\'annulation'): ?>
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                            <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                            <input type="hidden" name="action" value="Annulé">
+                                            <button type="submit" class="btn btn-validate" onclick=\"return confirm('Êtes-vous sûr de vouloir accepter l&apos;annulation ?')\">Accepter annulation</button>
+                                        </form>
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                            <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                            <input type="hidden" name="action" value="Accepté">
+                                            <button type="submit" class="btn btn-reject" onclick="return confirm('Êtes-vous sûr de vouloir rejeter l&apos;annulation ?')">Rejeter annulation</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                            <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                            <input type="hidden" name="action" value="Accepté">
+                                            <button type="submit" class="btn btn-validate" onclick="return confirm('Êtes-vous sûr de vouloir valider cette demande ?')">Valider la demande</button>
+                                        </form>
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="idEtu" value="<?= $demande['etudiant_id'] ?>">
+                                            <input type="hidden" name="idEve" value="<?= $demande['evenement_id'] ?>">
+                                            <input type="hidden" name="action" value="Refusé">
+                                            <button type="submit" class="btn btn-reject" onclick="return confirm('Êtes-vous sûr de vouloir refuser cette demande ?')">Refuser la demande</button>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -382,7 +449,11 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter);
 
 <script>
 function clearFilters() {
-    window.location.href = 'demandes_participants.php';
+    const url = new URL(window.location.href);
+    url.searchParams.delete('status');
+    url.searchParams.delete('event');
+    url.searchParams.delete('type');
+    window.location.href = url.toString();
 }
 
 // Auto-hide alerts after 5 seconds
