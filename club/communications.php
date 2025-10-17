@@ -28,7 +28,7 @@ function decrypt_api_key($encrypted_api_key) {
     return openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
 }
 
-function envoyerMail ($email,$resultat,$nom,$prenom,$sujetParam = null,$corpsParam = null){
+function envoyerMailAvecPieceJointe ($email,$resultat,$nom,$prenom,$sujetParam = null,$corpsParam = null,$attachmentPath = null,$attachmentName = null){
 
     global $clubConfig;
     $mail = new PHPMailer(true);
@@ -57,13 +57,68 @@ function envoyerMail ($email,$resultat,$nom,$prenom,$sujetParam = null,$corpsPar
             $mail->FromName   = $clubConfig['nom_expediteur'] ?? $clubConfig['email'];
             $mail->addReplyTo($clubConfig['email']); //l'adresse à répondre
             $mail->addAddress($email);
-            $mail->Body    = $corps;
+            $mail->isHTML(true);
+            $mail->Body    = nl2br($corps);
             $mail->Subject = $sujet;
+            
+            // Add attachment if provided
+            if ($attachmentPath && file_exists('../' . $attachmentPath)) {
+                $mail->addAttachment('../' . $attachmentPath, $attachmentName);
+            }
+            
             $mail->send();
         } catch(Exception $e){
             echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
         }
 
+}
+
+// Handle file upload
+function handleFileUpload() {
+    if (!isset($_FILES['attachment']) || $_FILES['attachment']['error'] !== UPLOAD_ERR_OK) {
+        return null;
+    }
+    
+    $allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain',
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'application/zip',
+        'application/x-rar-compressed'
+    ];
+    
+    $fileType = $_FILES['attachment']['type'];
+    if (!in_array($fileType, $allowedTypes)) {
+        throw new Exception("Type de fichier non autorisé. Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, TXT, JPG, PNG, GIF, WEBP, ZIP, RAR");
+    }
+    
+    $maxSize = 10 * 1024 * 1024; // 10MB
+    if ($_FILES['attachment']['size'] > $maxSize) {
+        throw new Exception("Le fichier est trop volumineux. Taille maximale: 10MB");
+    }
+    
+    $uploadDir = "../assets/uploads/communications/";
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+    
+    $extension = pathinfo($_FILES['attachment']['name'], PATHINFO_EXTENSION);
+    $filename = uniqid('comm_' . $_SESSION['id'] . '_') . '.' . $extension;
+    $targetPath = "assets/uploads/communications/" . $filename;
+    $fullTargetPath = $uploadDir . $filename;
+    
+    if (move_uploaded_file($_FILES['attachment']['tmp_name'], $fullTargetPath)) {
+        return $targetPath;
+    } else {
+        throw new Exception("Erreur lors du téléchargement du fichier");
+    }
 }
 
 
@@ -89,13 +144,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['action']) && $_POST[
     } elseif (empty($recipients)) {
         $mail_error = "Veuillez sélectionner au moins un destinataire.";
     } else {
-        $sent = 0;
-        foreach ($recipients as $email) {
-            // We don't need nom/prenom for custom messages; pass empty strings
-            envoyerMail($email, true, '', '', $sujet, $corps);
-            $sent++;
+        try {
+            // Handle file upload
+            $attachmentPath = null;
+            $attachmentName = null;
+            if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
+                $attachmentPath = handleFileUpload();
+                $attachmentName = $_FILES['attachment']['name'];
+            }
+            
+            $sent = 0;
+            foreach ($recipients as $email) {
+                // We don't need nom/prenom for custom messages; pass empty strings
+                envoyerMailAvecPieceJointe($email, true, '', '', $sujet, $corps, $attachmentPath, $attachmentName);
+                $sent++;
+            }
+            $mail_message = $sent . " message(s) envoyé(s) avec succès.";
+        } catch (Exception $e) {
+            $mail_error = "Erreur: " . $e->getMessage();
         }
-        $mail_message = $sent . " message(s) envoyé(s) avec succès.";
     }
 }
 
@@ -174,7 +241,6 @@ function fetchParticipants($conn,$eventFilter='') {
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab active" onclick="navigateTo('communications.php')">Communications</div>
         <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
-        <div class="tab" onclick="navigateTo('profile_club.php')">Mon Profile</div>
     </div>
 
     <div class="events-container">
@@ -223,7 +289,7 @@ function fetchParticipants($conn,$eventFilter='') {
         <div class="card mt-4" style="max-width: 860px; width: 100%;">
             <div class="card-body">
                 <h5 class="card-title mb-3">Envoyer un message aux participants</h5>
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="send_messages" />
                     <?php if (empty($eventFilter)): ?>
                         <div class="alert alert-info mb-3 text-center"><i class="bi bi-info-circle me-1"></i>Veuillez d'abord sélectionner un événement pour pouvoir envoyer des messages.</div>
@@ -236,6 +302,20 @@ function fetchParticipants($conn,$eventFilter='') {
                         <div class="col-md-12">
                             <label class="form-label">Message</label>
                             <textarea class="form-control" name="corps" rows="5" placeholder="Contenu du message" <?= empty($eventFilter) ? 'disabled' : 'required' ?>></textarea>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Pièce jointe (optionnel)</label>
+                            <input type="file" class="form-control" name="attachment" id="attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar" <?= empty($eventFilter) ? 'disabled' : '' ?>>
+                            <small class="form-text text-muted">Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, TXT, JPG, PNG, GIF, WEBP, ZIP, RAR (max 10MB)</small>
+                            <div class="attachment-preview mt-2" id="attachmentPreview" style="display: none;">
+                                <div class="d-flex align-items-center p-2 bg-light rounded">
+                                    <i class="fas fa-paperclip me-2"></i>
+                                    <span id="attachmentName" class="flex-grow-1"></span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAttachment()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-12">
                             <label class="form-label">Destinataires (Acceptés<?= $eventFilter ? ' - ' . htmlspecialchars($eventFilter) : '' ?>)</label>
@@ -261,7 +341,7 @@ function fetchParticipants($conn,$eventFilter='') {
                         <div class="col-md-12 d-flex gap-2 justify-content-center">
                             <button type="button" class="btn btn-outline-secondary" onclick="document.querySelectorAll('.rec-checkbox').forEach(cb=>cb.checked=true)" <?= empty($eventFilter) ? 'disabled' : '' ?>><i class="bi bi-check2-square me-1"></i>Sélectionner tout</button>
                             <button type="button" class="btn btn-outline-secondary" onclick="document.querySelectorAll('.rec-checkbox').forEach(cb=>cb.checked=false)"><i class="bi bi-x-circle me-1"></i>Désélectionner tout</button>
-                            <button type="submit" class="btn btn-primary" <?= empty($eventFilter) ? 'disabled' : '' ?>><i class="bi bi-send me-1"></i>Envoyer</button>
+                            <button type="submit" class="btn btn-primary" onclick="return confirmSend()" <?= empty($eventFilter) ? 'disabled' : '' ?>><i class="bi bi-send me-1"></i>Envoyer</button>
                         </div>
                     </div>
                 </form>
@@ -276,6 +356,58 @@ function fetchParticipants($conn,$eventFilter='') {
     function clearFilters() {
         window.location.href = 'demandes_participants.php';
     }
+    
+    function clearAttachment() {
+        document.getElementById('attachment').value = '';
+        document.getElementById('attachmentPreview').style.display = 'none';
+    }
+    
+    function confirmSend() {
+        const recipients = document.querySelectorAll('.rec-checkbox:checked');
+        const attachment = document.getElementById('attachment').files[0];
+        const sujet = document.querySelector('input[name="sujet"]').value;
+        const corps = document.querySelector('textarea[name="corps"]').value;
+        
+        if (recipients.length === 0) {
+            alert('Veuillez sélectionner au moins un destinataire.');
+            return false;
+        }
+        
+        if (!sujet.trim()) {
+            alert('Veuillez saisir un sujet.');
+            return false;
+        }
+        
+        if (!corps.trim()) {
+            alert('Veuillez saisir un message.');
+            return false;
+        }
+        
+        let message = `Confirmer l'envoi du message ?\n\n`;
+        message += `Sujet: ${sujet}\n`;
+        message += `Destinataires: ${recipients.length} participant(s)\n`;
+        
+        if (attachment) {
+            message += `Pièce jointe: ${attachment.name} (${(attachment.size / 1024 / 1024).toFixed(2)} MB)\n`;
+        }
+        
+        message += `\nÊtes-vous sûr de vouloir envoyer ce message ?`;
+        
+        return confirm(message);
+    }
+    
+    document.getElementById('attachment').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('attachmentPreview');
+        const nameSpan = document.getElementById('attachmentName');
+        
+        if (file) {
+            nameSpan.textContent = file.name;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+        }
+    });
 </script>
 </body>
 </html>

@@ -15,9 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         try {
             if ($action === 'supprimer') {
-                $stmt = $conn->prepare("DELETE FROM evenements WHERE idEvent = ?");
-                $stmt->execute([$event_id]);
-                $message = "Événement supprimé avec succès.";
+                throw new Exception("La suppression des événements n'est pas autorisée.");
             } elseif ($action === 'changer_statut') {
                 $new_status = $_POST['new_status'];
                 $stmt = $conn->prepare("UPDATE evenements SET status = ? WHERE idEvent = ?");
@@ -193,14 +191,6 @@ $message = $_GET['message'] ?? '';
                             <input type="hidden" name="action" value="changer_statut">
                         </form>
                         
-                        <form method="POST" class="d-inline">
-                            <input type="hidden" name="event_id" value="<?= $event['idEvent'] ?>">
-                            <input type="hidden" name="action" value="supprimer">
-                            <button type="submit" class="btn btn-danger btn-sm" 
-                                    onclick="return confirm('Supprimer cet événement ?')">
-                                <i class="bi bi-trash3"></i>
-                            </button>
-                        </form>
                     </td>
                 </tr>
                 <?php endforeach; ?>

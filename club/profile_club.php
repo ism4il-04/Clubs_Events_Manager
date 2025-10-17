@@ -188,6 +188,7 @@ if(isset($_POST['update_club_info'])) {
     $description = trim($_POST['description']);
     $email = trim($_POST['email']);
     $nom_utilisateur = trim($_POST['nom_utilisateur']);
+    $password = trim($_POST['password']);
 
     if (empty($clubNom) || empty($nom_abr) || empty($email) || empty($nom_utilisateur)) {
         $clubError = "Les champs obligatoires doivent être remplis.";
@@ -201,9 +202,16 @@ if(isset($_POST['update_club_info'])) {
             try {
                 $conn->beginTransaction();
                 
-                // Update utilisateurs table
-                $updateUser = $conn->prepare("UPDATE utilisateurs SET email = ?, nom_utilisateur = ? WHERE id = ?");
-                $updateUser->execute([$email, $nom_utilisateur, $_SESSION['id']]);
+                // Update utilisateurs table - include password if provided
+                if (!empty($password)) {
+                    // Hash the new password
+                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                    $updateUser = $conn->prepare("UPDATE utilisateurs SET email = ?, nom_utilisateur = ?, password = ? WHERE id = ?");
+                    $updateUser->execute([$email, $nom_utilisateur, $hashed_password, $_SESSION['id']]);
+                } else {
+                    $updateUser = $conn->prepare("UPDATE utilisateurs SET email = ?, nom_utilisateur = ? WHERE id = ?");
+                    $updateUser->execute([$email, $nom_utilisateur, $_SESSION['id']]);
+                }
                 
                 // Update organisateur table
                 $updateClub = $conn->prepare("UPDATE organisateur SET clubNom = ?, nom_abr = ?, description = ? WHERE id = ?");
@@ -716,7 +724,6 @@ if(isset($_POST['test_email'])) {
     <a href="demandes_participants.php"><button>Participants</button></a>
     <a href="communications.php"><button>Communications</button></a>
     <a href="certificats.php"><button>Certificats</button></a>
-    <a href="profile_club.php"><button class="active">Mon Profile</button></a>
 </nav>
 
 <div class="container">
@@ -866,6 +873,13 @@ if(isset($_POST['test_email'])) {
                         <input type="text" id="nom_utilisateur_contact" name="nom_utilisateur" value="<?= htmlspecialchars($profile['nom_utilisateur']) ?>" required>
                         <small style="color: #6b7280; font-size: 0.8rem; margin-top: 5px; display: block;">
                             <i class="fas fa-info-circle"></i> Nom d'utilisateur pour la connexion
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Nouveau mot de passe</label>
+                        <input type="password" id="password" name="password" placeholder="Laissez vide pour conserver le mot de passe actuel">
+                        <small style="color: #6b7280; font-size: 0.8rem; margin-top: 5px; display: block;">
+                            <i class="fas fa-info-circle"></i> Laissez vide pour conserver le mot de passe actuel
                         </small>
                     </div>
                 </div>

@@ -2,8 +2,8 @@
 
 require_once "db.php";
 function fetchInformations ($conn) {
-    $stmt = $conn->prepare('SELECT * from utilisateurs NATURAL JOIN organisateur WHERE email = ?');
-    $stmt->execute(array($_SESSION['email']));
+    $stmt = $conn->prepare('SELECT o.*, u.email, u.nom_utilisateur FROM organisateur o JOIN utilisateurs u ON o.id = u.id WHERE o.id = ?');
+    $stmt->execute(array($_SESSION['id']));
     return $stmt->fetchAll();
 }
 
@@ -25,6 +25,32 @@ $club = !empty($informations) ? $informations[0] : null;
     .header-right { display: flex; align-items: center; gap: 20px; }
     .header-right a { color: #fff; text-decoration: none; font-weight: 500; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
     .header-right a:hover { color: #ffd700; }
+    
+    .club-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 8px 15px;
+        border-radius: 25px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .club-logo-header {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .club-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
 
     .img{
         width: 80px;
@@ -39,7 +65,18 @@ $club = !empty($informations) ? $informations[0] : null;
         </div>
     </div>
     <div class="header-right">
-        <span><?= htmlspecialchars($club['clubNom'] ?? 'Utilisateur') ?></span>
+        <a href="profile_club.php">
+            <i class="fa-solid fa-user-circle"></i> Mon profil
+        </a>
+        <div class="club-info">
+            <?php if (!empty($club['logo'])): ?>
+                <img src="../<?= htmlspecialchars($club['logo']) ?>" 
+                     class="club-logo-header" 
+                     alt="Logo du club"
+                     onerror="this.style.display='none'">
+            <?php endif; ?>
+            <span class="club-name"><?= htmlspecialchars($club['clubNom'] ?? $club['nom_utilisateur'] ?? 'Utilisateur') ?></span>
+        </div>
         <a href="../auth/logout.php">
             <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
         </a>

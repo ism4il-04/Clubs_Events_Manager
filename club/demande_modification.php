@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['email'])) {
-    header("Location: ../auth/login.php");
+    header("Location: ../login.php");
     exit();
 }
 
@@ -25,6 +25,11 @@ if (!$event) {
     header("Location: evenements_clubs.php");
     exit();
 }
+
+// Get current number of registered participants
+$countStmt = $conn->prepare("SELECT COUNT(*) as registered FROM participation WHERE evenement_id = ?");
+$countStmt->execute([$eventId]);
+$registeredCount = $countStmt->fetch()['registered'];
 
 // Check if event is Disponible or Sold out
 if (!in_array($event['status'], ['Disponible', 'Sold out'])) {
@@ -58,6 +63,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Validate places if not unlimited
         if (!$placesIllimitees && (empty($places) || $places < 1)) {
             throw new Exception("Veuillez entrer un nombre de places valide ou cocher 'Places illimitées'.");
+        }
+        
+        // Check current number of registered participants
+        if (!$placesIllimitees && !empty($places)) {
+            $countStmt = $conn->prepare("SELECT COUNT(*) as registered FROM participation WHERE evenement_id = ?");
+            $countStmt->execute([$eventId]);
+            $registeredCount = $countStmt->fetch()['registered'];
+            
+            if ($places < $registeredCount) {
+                throw new Exception("Impossible de réduire le nombre de places à $places. Il y a actuellement $registeredCount participants inscrits. Le nombre de places ne peut pas être inférieur au nombre de participants déjà inscrits.");
+            }
         }
         
         // Validate dates
@@ -390,6 +406,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 Places illimitées
                             </label>
                         </div>
+                        <small class="form-text text-info">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Actuellement <?= $registeredCount ?> participant(s) inscrit(s). Le nombre de places ne peut pas être inférieur à ce nombre.
+                        </small>
                     </div>
                 </div>
             </div>
@@ -484,8 +504,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             togglePlacesInput();
             placesIllimiteesCheckbox.addEventListener('change', togglePlacesInput);
+            
+            // Validate places against registered participants
+            const registeredCount = <?= json_encode($registeredCount ?? 0) ?>;
+            placesInput.addEventListener('input', function() {
+                const places = parseInt(this.value);
+                if (!isNaN(places) && places < registeredCount) {
+                    this.setCustomValidity(`Le nombre de places ne peut pas être inférieur à ${registeredCount} (participants déjà inscrits)`);
+                    this.style.borderColor = '#dc3545';
+                } else {
+                    this.setCustomValidity('');
+                    this.style.borderColor = '#e9ecef';
+                }
+            });
         });
     </script>
 </body>
 </html>
-

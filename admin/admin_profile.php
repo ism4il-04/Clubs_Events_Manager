@@ -146,8 +146,10 @@ if(isset($_POST['update_admin_info'])) {
                 
                 // Update user information
                 if (!empty($password)) {
+                    // Hash the new password
+                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
                     $updateStmt = $conn->prepare("UPDATE utilisateurs SET nom_utilisateur = ?, email = ?, password = ? WHERE id = ?");
-                    $updateStmt->execute([$nom_utilisateur, $email, $password, $_SESSION['id']]);
+                    $updateStmt->execute([$nom_utilisateur, $email, $hashed_password, $_SESSION['id']]);
                 } else {
                     $updateStmt = $conn->prepare("UPDATE utilisateurs SET nom_utilisateur = ?, email = ? WHERE id = ?");
                     $updateStmt->execute([$nom_utilisateur, $email, $_SESSION['id']]);

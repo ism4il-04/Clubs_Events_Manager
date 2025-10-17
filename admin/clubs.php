@@ -99,9 +99,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $conn->beginTransaction();
 
+                // Hasher le mot de passe
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
                 // Insérer dans utilisateurs
                 $stmt = $conn->prepare("INSERT INTO utilisateurs (email, password, nom_utilisateur) VALUES (?, ?, ?)");
-                $stmt->execute([$email, $password, $nom_utilisateur]);
+                $stmt->execute([$email, $hashed_password, $nom_utilisateur]);
                 $user_id = $conn->lastInsertId();
 
                 // Insérer dans organisateur
@@ -138,8 +141,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Mettre à jour utilisateurs
                 if (!empty($password)) {
+                    // Hasher le nouveau mot de passe
+                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
                     $stmt = $conn->prepare("UPDATE utilisateurs SET email = ?, nom_utilisateur = ?, password = ? WHERE id = ?");
-                    $stmt->execute([$email, $nom_utilisateur, $password, $club_id]);
+                    $stmt->execute([$email, $nom_utilisateur, $hashed_password, $club_id]);
                 } else {
                     $stmt = $conn->prepare("UPDATE utilisateurs SET email = ?, nom_utilisateur = ? WHERE id = ?");
                     $stmt->execute([$email, $nom_utilisateur, $club_id]);
@@ -152,30 +157,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $conn->commit();
                 $message = "Club modifié avec succès !";
 
-            // ACTION SUPPRIMER
+            // ACTION SUPPRIMER - DÉSACTIVÉE
             } elseif ($action === 'supprimer' && isset($_POST['club_id'])) {
-                $club_id = $_POST['club_id'];
-                
-                // Vérifier si le club a des événements
-                $stmt = $conn->prepare("SELECT COUNT(*) as nb_events FROM evenements WHERE organisateur_id = ?");
-                $stmt->execute([$club_id]);
-                $result = $stmt->fetch();
-                
-                if ($result['nb_events'] > 0) {
-                    throw new Exception("Impossible de supprimer ce club : il a des événements associés.");
-                }
-
-                $conn->beginTransaction();
-                
-                // Supprimer d'abord l'organisateur puis l'utilisateur
-                $stmt = $conn->prepare("DELETE FROM organisateur WHERE id = ?");
-                $stmt->execute([$club_id]);
-                
-                $stmt = $conn->prepare("DELETE FROM utilisateurs WHERE id = ?");
-                $stmt->execute([$club_id]);
-                
-                $conn->commit();
-                $message = "Club supprimé avec succès.";
+                throw new Exception("La suppression des clubs n'est pas autorisée.");
 
             // ACTION EDITOR - Préparation de l'édition
             } elseif ($action === 'editer' && isset($_POST['club_id'])) {
@@ -457,7 +441,7 @@ $message = $_GET['message'] ?? '';
     <?php endif; ?>
 
     <!-- Formulaire d'ajout/modification -->
-    <div class="form-container" id="clubForm" style="<?= ($form_action === 'ajouter' || $form_action === 'modifier') ? '' : 'display: none;' ?>">
+    <div class="form-container" id="clubForm" style="display: none;">
         <h4>
             <?= $form_action === 'ajouter' ? '<i class="bi bi-plus-circle me-1"></i>Ajouter un club' : '<i class="bi bi-pencil-square me-1"></i>Modifier le club' ?>
             <?php if ($form_action === 'modifier'): ?>
@@ -621,14 +605,6 @@ $message = $_GET['message'] ?? '';
                         </button>
                     </form>
                     
-                    <form method="POST" class="d-inline">
-                        <input type="hidden" name="club_id" value="<?= $club['id'] ?>">
-                        <input type="hidden" name="action" value="supprimer">
-                        <button type="submit" class="btn btn-danger btn-sm" 
-                                onclick="return confirm('Êtes-vous sûr de vouloir supprimer le club <?= addslashes($club['clubNom']) ?> ?')">
-                            <i class="bi bi-trash3 me-1"></i>Supprimer
-                        </button>
-                    </form>
                 </div>
             </div>
         </div>
@@ -677,8 +653,8 @@ function resetForm() {
     }
 }
 
-// Afficher le formulaire si on est en mode édition ou ajout
-<?php if ($form_action === 'modifier' || $form_action === 'ajouter'): ?>
+// Afficher le formulaire seulement si on est en mode édition
+<?php if ($form_action === 'modifier'): ?>
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('clubForm').style.display = 'block';
     document.querySelector('html').scrollTo({
