@@ -258,7 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['participer'])) {
             $insertStmt->execute();
 
             // Send validation email
-            $validationLink = "http://localhost/Clubs_Events_Manager/auth/validate-email.php?token=$token&email=$email";
+            $validationLink = "https://clubseventsmanager.fwh.is/Clubs_Events_Manager/auth/validate-email.php?token=$token&email=$email";
             $body = "
                 <p>Cher $prenom $nom,</p>
                 <p>Merci de vous être inscrit. Veuillez cliquer sur le lien suivant pour valider votre compte :</p>
@@ -271,6 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['participer'])) {
             try {
                 $mail = new PHPMailer(true);
                 $mail->isSMTP();
+                $mail->isHTML(true);
                 $mail->Host = $_ENV["HOST"];
                 $mail->SMTPAuth = true;
                 $mail->SMTPSecure = 'tls';

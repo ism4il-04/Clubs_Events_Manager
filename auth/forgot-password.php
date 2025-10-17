@@ -50,7 +50,8 @@ if(isset($_POST["email"]) && !empty($_POST["email"])) {
         $insertStmt->execute();
 
         // Prepare email
-        $resetLink = "http://localhost/Clubs_Events_Manager/auth/reset-password.php?key=$key&email=$email&action=reset";
+        $resetLink = "https://clubseventsmanager.fwh.is/Clubs_Events_Manager/auth/reset-password.php?key=$key&email=$email&action=reset";
+
         $body = "
             <p>Cher utilisateur,</p>
             <p>Veuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe :</p>
@@ -66,6 +67,7 @@ if(isset($_POST["email"]) && !empty($_POST["email"])) {
         try {
             $mail = new PHPMailer(true);
             $mail->isSMTP();                                            //Send using SMTP
+            $mail->isHTML(true);
             $mail->Host       = $_ENV["HOST"];                     //Set the SMTP server to send through
             $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
             $mail->SMTPSecure = 'tls';

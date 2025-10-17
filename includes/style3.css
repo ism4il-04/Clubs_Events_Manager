@@ -181,8 +181,6 @@ background: white;
 .status-ongoing { background: #cce5ff; color: #004085; }
 .status-completed { background: #e2e3e5; color: #383d41; }
 .status-cancelled { background: #f8d7da; color: #721c24; }
-.status-modification-requested { background: #ffeaa7; color: #d63031; }
-.status-cancellation-requested { background: #fab1a0; color: #e17055; }
 
 .event-info {
     display: grid;

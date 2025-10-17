@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['email'])) {
-    header("Location: ../login.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
@@ -89,6 +89,7 @@ include "../includes/header.php";
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
         <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
+        <div class="tab" onclick="navigateTo('profile_club.php')">Mon Profile</div>
     </div>
     
     <div class="events-container">
@@ -148,25 +149,20 @@ include "../includes/header.php";
                         // Determine new status
                         $newStatus = $event['status'];
                         
-                        // Don't auto-update status if it's already in a special state
-                        if (!in_array($event['status'], ['Modification demandée', 'Annulation demandée', 'En attente', 'Rejeté', 'Annulé'])) {
-                            // Check if event date has passed
-                            if (strtotime($eventEndDateTime) < strtotime($currentDateTime)) {
-                                $newStatus = 'Terminé';
-                            }
-                            // Check if no available places (count >= max places)
-                            elseif (!empty($event['places']) && $registeredCount >= $event['places']) {
-                                $newStatus = 'Sold out';
-                            }
-                            
-                            // Update database if status has changed
-                            if ($newStatus !== $event['status']) {
-                                $updateStmt = $conn->prepare("UPDATE evenements SET status = ? WHERE idEvent = ?");
-                                $updateStmt->execute([$newStatus, $event['idEvent']]);
-                                $status = $newStatus;
-                            } else {
-                                $status = $event['status'];
-                            }
+                        // Check if event date has passed
+                        if (strtotime($eventEndDateTime) < strtotime($currentDateTime)) {
+                            $newStatus = 'Terminé';
+                        }
+                        // Check if no available places (count >= max places)
+                        elseif (!empty($event['places']) && $registeredCount >= $event['places']) {
+                            $newStatus = 'Sold out';
+                        }
+                        
+                        // Update database if status has changed
+                        if ($newStatus !== $event['status']) {
+                            $updateStmt = $conn->prepare("UPDATE evenements SET status = ? WHERE idEvent = ?");
+                            $updateStmt->execute([$newStatus, $event['idEvent']]);
+                            $status = $newStatus;
                         } else {
                             $status = $event['status'];
                         }
@@ -178,9 +174,7 @@ include "../includes/header.php";
                             'Sold out' => 'status-soldout',
                             'En cours' => 'status-ongoing',
                             'Terminé' => 'status-completed',
-                            'Annulé' => 'status-cancelled',
-                            'Modification demandée' => 'status-modification-requested',
-                            'Annulation demandée' => 'status-cancellation-requested'
+                            'Annulé' => 'status-cancelled'
                         ][$status] ?? 'status-pending';
                     ?>
                                 <span class="event-status <?= $statusClass ?>"><?= htmlspecialchars($status) ?></span>

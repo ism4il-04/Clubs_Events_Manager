@@ -3,7 +3,7 @@ session_start();
 include '../includes/db.php';
 
 if (!isset($_SESSION['id'])) {
-    header('Location: ../login.php');
+    header("Location: ../auth/login.php");
     exit;
 }
 
@@ -716,6 +716,7 @@ if(isset($_POST['test_email'])) {
     <a href="demandes_participants.php"><button>Participants</button></a>
     <a href="communications.php"><button>Communications</button></a>
     <a href="certificats.php"><button>Certificats</button></a>
+    <a href="profile_club.php"><button class="active">Mon Profile</button></a>
 </nav>
 
 <div class="container">
