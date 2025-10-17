@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['email'])) {
-    header("Location: ../auth/login.php");
+    header("Location: ../login.php");
     exit();
 }
 
@@ -26,11 +26,22 @@ if (!$event) {
     exit();
 }
 
+// Get current number of registered participants
+$countStmt = $conn->prepare("SELECT COUNT(*) as registered FROM participation WHERE evenement_id = ?");
+$countStmt->execute([$eventId]);
+$registeredCount = $countStmt->fetch()['registered'];
+
 // Check if event can be modified (only En attente and Rejeté can be modified directly)
 if (!in_array($event['status'], ['En attente', 'Rejeté'])) {
-    $_SESSION['error_message'] = "Cet événement ne peut pas être modifié directement. Veuillez faire une demande de modification.";
-    header("Location: evenements_clubs.php");
-    exit();
+    // For Sold out and Disponible events, redirect to modification request page
+    if (in_array($event['status'], ['Sold out', 'Disponible'])) {
+        header("Location: demande_modification.php?id=" . $eventId);
+        exit();
+    } else {
+        $_SESSION['error_message'] = "Cet événement ne peut pas être modifié.";
+        header("Location: evenements_clubs.php");
+        exit();
+    }
 }
 
 // Handle form submission
@@ -57,6 +68,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Validate places if not unlimited
         if (!$placesIllimitees && (empty($places) || $places < 1)) {
             throw new Exception("Veuillez entrer un nombre de places valide ou cocher 'Places illimitées'.");
+        }
+        
+        // Check current number of registered participants
+        if (!$placesIllimitees && !empty($places)) {
+            $countStmt = $conn->prepare("SELECT COUNT(*) as registered FROM participation WHERE evenement_id = ?");
+            $countStmt->execute([$eventId]);
+            $registeredCount = $countStmt->fetch()['registered'];
+            
+            if ($places < $registeredCount) {
+                throw new Exception("Impossible de réduire le nombre de places à $places. Il y a actuellement $registeredCount participants inscrits. Le nombre de places ne peut pas être inférieur au nombre de participants déjà inscrits.");
+            }
         }
         
         // Validate dates
@@ -280,7 +302,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="tab" onclick="navigateTo('ajouter_evenement.php')">Ajouter un événement</div>
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
-        <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
     </div>
 
     <div class="form-container">
@@ -383,6 +404,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </label>
                         </div>
                         <small class="form-text">Capacité maximale ou cochez si illimité</small>
+                        <small class="form-text text-info d-block">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Actuellement <?= $registeredCount ?> participant(s) inscrit(s). Le nombre de places ne peut pas être inférieur à ce nombre.
+                        </small>
                     </div>
                 </div>
             </div>
@@ -489,6 +514,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             togglePlacesInput();
             placesIllimiteesCheckbox.addEventListener('change', togglePlacesInput);
+            
+            // Validate places against registered participants
+            const registeredCount = <?= json_encode($registeredCount ?? 0) ?>;
+            placesInput.addEventListener('input', function() {
+                const places = parseInt(this.value);
+                if (!isNaN(places) && places < registeredCount) {
+                    this.setCustomValidity(`Le nombre de places ne peut pas être inférieur à ${registeredCount} (participants déjà inscrits)`);
+                    this.style.borderColor = '#dc3545';
+                } else {
+                    this.setCustomValidity('');
+                    this.style.borderColor = '#e9ecef';
+                }
+            });
 
             dateDepart.addEventListener('change', function() {
                 dateFin.min = this.value;

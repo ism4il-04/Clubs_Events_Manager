@@ -3,7 +3,7 @@ session_start();
 include '../includes/db.php';
 
 if (!isset($_SESSION['id'])) {
-    header("Location: ../auth/login.php");
+    header('Location: ../login.php');
     exit;
 }
 

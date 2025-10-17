@@ -197,101 +197,6 @@
     </style>
 </head>
 <body>
-<?php
-require_once "../includes/db.php";
-require_once '../vendor/autoload.php';
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->load();
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['participer'])) {
-    // Collect and sanitize form data
-    $nom = trim($_POST['nom']);
-    $prenom = trim($_POST['prenom']);
-    $date_naissance = $_POST['date_naissance'];
-    $telephone = trim($_POST['telephone']);
-    $filiere = $_POST['filiere'];
-    $annee = $_POST['annee'];
-    $email = trim($_POST['email']);
-    $nom_utilisateur = trim($_POST['nom_utilisateur']);
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
-
-    // Basic validation
-    if ($password !== $confirm_password) {
-        $error = "Les mots de passe ne correspondent pas.";
-    } elseif (strlen($password) < 6) {
-        $error = "Le mot de passe doit contenir au moins 6 caractères.";
-    } else {
-        // Check if email or username already exists in utilisateurs
-        $stmt = $conn->prepare("SELECT id FROM utilisateurs WHERE email = :email OR nom_utilisateur = :nom_utilisateur");
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':nom_utilisateur', $nom_utilisateur);
-        $stmt->execute();
-        if ($stmt->rowCount() > 0) {
-            $error = "L'email ou le nom d'utilisateur existe déjà.";
-        } else {
-            // Generate validation token
-            $token = md5(uniqid(rand(), true));
-            $expDate = date('Y-m-d H:i:s', strtotime('+1 day'));
-
-            // Hash password
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-            // Store in password_reset_temp table (reusing for signup validation)
-            $insertStmt = $conn->prepare(
-                "INSERT INTO password_reset_temp (email, token, expDate, nom, prenom, date_naissance, telephone, filiere, annee, nom_utilisateur, password, type) 
-                 VALUES (:email, :token, :expDate, :nom, :prenom, :date_naissance, :telephone, :filiere, :annee, :nom_utilisateur, :password, 'signup')"
-            );
-            $insertStmt->bindParam(':email', $email);
-            $insertStmt->bindParam(':token', $token);
-            $insertStmt->bindParam(':expDate', $expDate);
-            $insertStmt->bindParam(':nom', $nom);
-            $insertStmt->bindParam(':prenom', $prenom);
-            $insertStmt->bindParam(':date_naissance', $date_naissance);
-            $insertStmt->bindParam(':telephone', $telephone);
-            $insertStmt->bindParam(':filiere', $filiere);
-            $insertStmt->bindParam(':annee', $annee);
-            $insertStmt->bindParam(':nom_utilisateur', $nom_utilisateur);
-            $insertStmt->bindParam(':password', $hashedPassword);
-            $insertStmt->execute();
-
-            // Send validation email
-            $validationLink = "http://localhost/Clubs_Events_Manager/auth/validate-email.php?token=$token&email=$email";
-            $body = "
-                <p>Cher $prenom $nom,</p>
-                <p>Merci de vous être inscrit. Veuillez cliquer sur le lien suivant pour valider votre compte :</p>
-                <p><a href='$validationLink'>$validationLink</a></p>
-                <p>Le lien expirera après 1 jour.</p>
-                <p>Cordialement,<br>Équipe Clubs & Événements Manager</p>
-            ";
-            $subject = "Validation de votre compte - Clubs & Événements Manager";
-
-            try {
-                $mail = new PHPMailer(true);
-                $mail->isSMTP();
-                $mail->Host = $_ENV["HOST"];
-                $mail->SMTPAuth = true;
-                $mail->SMTPSecure = 'tls';
-                $mail->Username = $_ENV["USERNAME"];
-                $mail->Password = $_ENV["API_KEY"];
-                $mail->Port = $_ENV["PORT"];
-                $mail->From = $_ENV["FROM"];
-                $mail->FromName = $_ENV["FROM_NAME"];
-                $mail->addReplyTo($_ENV["REPLY_TO"]);
-                $mail->addAddress($email);
-                $mail->Body = $body;
-                $mail->Subject = $subject;
-                $mail->send();
-                $success = "Un email de validation a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception pour activer votre compte.";
-            } catch (Exception $e) {
-                $error = "Erreur lors de l'envoi de l'email : " . $mail->ErrorInfo;
-            }
-        }
-    }
-}
-?>
 
 <div class="signup-container">
     <div class="header">
@@ -299,15 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['participer'])) {
         <p>Inscrivez-vous pour accéder aux événements et fonctionnalités</p>
     </div>
 
-<?php if (isset($error)) { echo "<div class='error-message' style='color: red; text-align: center; margin-bottom: 20px;'>$error</div>"; } ?>
-<?php if (isset($success)) { echo "<div class='success-message' style='color: green; text-align: center; margin-bottom: 20px;'>$success</div>"; } ?>
-
-    <div class="header">
-        <h1>Créer un compte étudiant</h1>
-        <p>Inscrivez-vous pour accéder aux événements et fonctionnalités</p>
-    </div>
-
-    <form action="" method="post" enctype="multipart/form-data" onsubmit="return checkPasswords();">
+    <form action="login.php" method="post" enctype="multipart/form-data" onsubmit="return checkPasswords();">
         <!-- Renseignements personnels -->
         <fieldset>
             <legend>Renseignements personnels</legend>
@@ -363,14 +260,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['participer'])) {
                 </div>
                 <div>
                     <label>Mot de passe</label>
-                    <input type="password" name="password" id="password" required minlength="6" class="password-input">
+                    <input type="password" name="password" id="password" required minlength="6">
                 </div>
                 <div>
                     <label>Confirmer le mot de passe</label>
-                    <input type="password" name="confirm_password" id="confirm_password" required minlength="6" class="password-input">
+                    <input type="password" name="confirm_password" id="confirm_password" required minlength="6">
                     <div class="password-error" id="password-error">Les mots de passe ne correspondent pas.</div>
                 </div>
-
             </div>
         </fieldset>
 
@@ -382,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['participer'])) {
     <div class="extra-links">
         <p>Déjà inscrit ? <a href="login.php">Se connecter</a></p>
     </div>
-    <a href="../index.php" class="back-home">
+    <a href="index.php" class="back-home">
         <i class="fa-solid fa-arrow-left"></i> Retour à l'accueil
     </a>
 </div>
@@ -395,27 +291,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['participer'])) {
 
         if (pwd !== confirmPwd) {
             errorMsg.style.display = 'block';
-            document.getElementById('confirm_password').focus(); // focus the field
-            return false; // prevent form submission
+            return false;
         } else {
             errorMsg.style.display = 'none';
-            return true; // allow submission
+            return true;
         }
     }
 
-    // Optional: real-time check as user types
-    const passwordInput = document.getElementById('password');
-    const confirmInput = document.getElementById('confirm_password');
-    confirmInput.addEventListener('input', () => {
-        const errorMsg = document.getElementById('password-error');
-        if (passwordInput.value !== confirmInput.value) {
-            errorMsg.style.display = 'block';
-        } else {
-            errorMsg.style.display = 'none';
-        }
-    });
-
-    // Existing filiere/annee code
     const filiereRadios = document.querySelectorAll('input[name="filiere"]');
     const anneeContainer = document.getElementById('annee-container');
 
@@ -451,7 +333,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['participer'])) {
         });
     });
 </script>
-
 
 </body>
 </html>

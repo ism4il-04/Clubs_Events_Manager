@@ -6,7 +6,7 @@
     <title>Clubs & Events Manager - ENSA Tétouan</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="icon" type="image/png" sizes="16x16" href="../pigeon2-removebg-preview.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="pigeon2-removebg-preview.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* === RESET === */
@@ -536,7 +536,7 @@
         <div class="header-container">
             <div class="logo-section">
                 <div class="logo">
-                    <img src="../Horizontal_Logo-removebg-preview.png" alt="InfoTech Logo">
+                    <img src="Horizontal_Logo-removebg-preview.png" alt="InfoTech Logo">
                 </div>
             </div>
             <div class="auth-buttons">
@@ -550,7 +550,7 @@
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M6 12v-2h3v2h5v2H1v-2h5zM11 3v2H8V3H3V1h10v2h-2z"/>
                     </svg>
-                    S'inscrire comme participant
+                    S'inscrire
                 </a>
             </div>
         </div>
@@ -582,6 +582,13 @@
                         </svg>
                         Commencer maintenant
                     </a>
+                    <a href="#features" class="btn-secondary">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                            <path d="M6.271 5.055a.5.5 0 0 1 .52.038L11 7.055a.5.5 0 0 1 0 .89L6.791 9.907a.5.5 0 0 1-.791-.39V5.5a.5.5 0 0 1 .271-.445z"/>
+                        </svg>
+                        Découvrir
+                    </a>
                 </div>
             </div>
             
@@ -598,7 +605,7 @@
                         <p>Suivez les inscriptions en temps réel</p>
                     </div>
                     <div class="card">
-                        <div class="card-icon">✔️</div>
+                        <div class="card-icon">✅</div>
                         <h4>Validation</h4>
                         <p>Processus d'approbation simplifié</p>
                     </div>

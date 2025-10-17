@@ -2,7 +2,7 @@
 
 session_start();
 if (!isset($_SESSION['email'])) {
-    header("Location: ../auth/login.php");
+    header("Location: ../login.php");
     exit();
 }
 require_once "../includes/db.php";
@@ -76,6 +76,76 @@ $participants = fetchParticipants($conn,$eventFilter);
 // Load demandes to show eligible recipients (default Accepté)
 $demandes = fetchDemandes($conn, 'Accepté', $eventFilter, $participantFilter);
 
+// Handle file upload
+function handleFileUpload($file, $uploadDir) {
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new Exception("Erreur lors du téléchargement du fichier.");
+    }
+    
+    $allowedTypes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain', 'application/zip', 'application/x-rar-compressed'
+    ];
+    
+    $maxFileSize = 10 * 1024 * 1024; // 10MB
+    
+    if (!in_array($file['type'], $allowedTypes)) {
+        throw new Exception("Type de fichier non autorisé.");
+    }
+    
+    if ($file['size'] > $maxFileSize) {
+        throw new Exception("Le fichier est trop volumineux. Taille maximale : 10MB.");
+    }
+    
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+    
+    $fileExtension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $fileName = uniqid('attachment_') . '.' . $fileExtension;
+    $targetPath = $uploadDir . $fileName;
+    
+    if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+        throw new Exception("Erreur lors de l'enregistrement du fichier.");
+    }
+    
+    return 'assets/uploads/communications/' . $fileName;
+}
+
+// Send email with attachment
+function envoyerMailAvecPieceJointe($email, $sujet, $corps, $attachmentPath = null, $attachmentName = null) {
+    global $clubConfig;
+    $mail = new PHPMailer(true);
+    
+    try {
+        //Server settings
+        $mail->isSMTP();
+        $mail->Host = $clubConfig['serveur_smtp'];
+        $mail->SMTPAuth = true;
+        $mail->SMTPSecure = 'tls';
+        $mail->Username = $clubConfig['nom_smtp'];
+        $mail->Password = decrypt_api_key($clubConfig['api_key_encrypted']);
+        $mail->Port = $clubConfig['port_smtp'];
+        $mail->From = $clubConfig['email'];
+        $mail->FromName = $clubConfig['nom_expediteur'] ?? $clubConfig['email'];
+        $mail->addReplyTo($clubConfig['email']);
+        $mail->addAddress($email);
+        $mail->isHTML(true);
+        $mail->Body = nl2br($corps);
+        $mail->Subject = $sujet;
+        
+        if ($attachmentPath && file_exists('../' . $attachmentPath)) {
+            $mail->addAttachment('../' . $attachmentPath, $attachmentName);
+        }
+        
+        $mail->send();
+    } catch(Exception $e) {
+        throw new Exception("Erreur lors de l'envoi de l'email: " . $e->getMessage());
+    }
+}
+
 // Handle sending messages
 $mail_message = '';
 $mail_error = '';
@@ -83,19 +153,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['action']) && $_POST[
     $sujet = trim($_POST['sujet'] ?? '');
     $corps = trim($_POST['corps'] ?? '');
     $recipients = $_POST['recipients'] ?? [];
+    $attachmentPath = null;
+    $attachmentName = null;
 
-    if (empty($sujet) || empty($corps)) {
-        $mail_error = "Veuillez saisir un sujet et un message.";
-    } elseif (empty($recipients)) {
-        $mail_error = "Veuillez sélectionner au moins un destinataire.";
-    } else {
+    try {
+        if (empty($sujet) || empty($corps)) {
+            throw new Exception("Veuillez saisir un sujet et un message.");
+        }
+        
+        if (empty($recipients)) {
+            throw new Exception("Veuillez sélectionner au moins un destinataire.");
+        }
+        
+        // Handle file upload
+        if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
+            $attachmentPath = handleFileUpload($_FILES['attachment'], '../assets/uploads/communications/');
+            $attachmentName = $_FILES['attachment']['name'];
+        }
+        
         $sent = 0;
         foreach ($recipients as $email) {
-            // We don't need nom/prenom for custom messages; pass empty strings
-            envoyerMail($email, true, '', '', $sujet, $corps);
+            envoyerMailAvecPieceJointe($email, $sujet, $corps, $attachmentPath, $attachmentName);
             $sent++;
         }
         $mail_message = $sent . " message(s) envoyé(s) avec succès.";
+        
+    } catch (Exception $e) {
+        $mail_error = $e->getMessage();
     }
 }
 
@@ -174,7 +258,6 @@ function fetchParticipants($conn,$eventFilter='') {
         <div class="tab" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab active" onclick="navigateTo('communications.php')">Communications</div>
         <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
-        <div class="tab" onclick="navigateTo('profile_club.php')">Mon Profile</div>
     </div>
 
     <div class="events-container">
@@ -238,6 +321,20 @@ function fetchParticipants($conn,$eventFilter='') {
                             <textarea class="form-control" name="corps" rows="5" placeholder="Contenu du message" <?= empty($eventFilter) ? 'disabled' : 'required' ?>></textarea>
                         </div>
                         <div class="col-md-12">
+                            <label class="form-label">Pièce jointe (optionnel)</label>
+                            <input type="file" class="form-control" name="attachment" id="attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar" <?= empty($eventFilter) ? 'disabled' : '' ?>>
+                            <small class="form-text text-muted">Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, TXT, JPG, PNG, GIF, WEBP, ZIP, RAR (max 10MB)</small>
+                            <div class="attachment-preview mt-2" id="attachmentPreview" style="display: none;">
+                                <div class="d-flex align-items-center p-2 bg-light rounded">
+                                    <i class="fas fa-paperclip me-2"></i>
+                                    <span id="attachmentName" class="flex-grow-1"></span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAttachment()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
                             <label class="form-label">Destinataires (Acceptés<?= $eventFilter ? ' - ' . htmlspecialchars($eventFilter) : '' ?>)</label>
                             <div class="border rounded p-3" style="max-height: 220px; overflow:auto;">
                                 <?php if (empty($demandes)): ?>
@@ -276,6 +373,37 @@ function fetchParticipants($conn,$eventFilter='') {
     function clearFilters() {
         window.location.href = 'demandes_participants.php';
     }
+    
+    function clearAttachment() {
+        document.getElementById('attachment').value = '';
+        document.getElementById('attachmentPreview').style.display = 'none';
+    }
+    
+    // Handle file attachment preview
+    document.getElementById('attachment').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('attachmentPreview');
+        const nameSpan = document.getElementById('attachmentName');
+        
+        if (file) {
+            nameSpan.textContent = file.name;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+    
+    // Auto-hide alerts
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.transition = 'opacity 0.5s';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 500);
+            }, 5000);
+        });
+    });
 </script>
 </body>
 </html>

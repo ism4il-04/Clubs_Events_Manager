@@ -25,7 +25,7 @@
         <a href="admin_profile.php">
             <i class="fa-solid fa-user-shield"></i> Mon profil
         </a>
-        <a href="../auth/logout.php">
+        <a href="../logout.php">
             <i class="fa-solid fa-right-from-bracket"></i>Déconnexion</a>
     </div>
 </header>

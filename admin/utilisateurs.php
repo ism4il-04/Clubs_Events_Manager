@@ -1,12 +1,14 @@
 <?php
 session_start();
 if (!isset($_SESSION['email']) ) {
-    header("Location: ../auth/login.php");
+    header("Location: ../login.php");
     exit();
 }
 
 require_once "../includes/db.php";
 
+// [Le code PHP de gestion des actions reste identique à la version précédente]
+// ... (même code de traitement des actions CRUD)
 
 // Récupérer tous les utilisateurs avec leurs rôles et informations
 $stmt = $conn->prepare("SELECT u.*,o.description, 
@@ -274,6 +276,7 @@ $message = $_GET['message'] ?? '';
     <div class="tab" onclick="navigateTo('evenements.php')">Tous les événements</div>
     <div class="tab" onclick="navigateTo('clubs.php')">Gestion des clubs</div>
     <div class="tab active" onclick="navigateTo('utilisateurs.php')">Utilisateurs</div>
+    <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
 </div>
 <div class="container-admin">
     <!-- En-tête avec statistiques -->

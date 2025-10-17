@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['email'])) {
-    header("Location: ../auth/login.php");
+    header("Location: ../login.php");
     exit();
 }
 require_once "../includes/db.php";
@@ -183,7 +183,6 @@ $demandes = fetchDemandes($conn, $statusFilter, $eventFilter, $typeFilter);
         <div class="tab active" onclick="navigateTo('demandes_participants.php')">Participants</div>
         <div class="tab" onclick="navigateTo('communications.php')">Communications</div>
         <div class="tab" onclick="navigateTo('certificats.php')">Certificats</div>
-        <div class="tab" onclick="navigateTo('profile_club.php')">Mon Profile</div>
     </div>
     
     <div class="events-container">
