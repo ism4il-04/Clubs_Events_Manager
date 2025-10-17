@@ -21,8 +21,6 @@ function isEventFull($conn, $eventId) {
     $stmt->execute([$eventId]);
     $acceptedCount = $stmt->fetch(PDO::FETCH_ASSOC)['accepted'];
     
-    // Debug output
-    echo "<!-- DEBUG: Event $eventId - Places: " . $event['places'] . ", Accepted: $acceptedCount, Full: " . ($acceptedCount >= $event['places'] ? 'YES' : 'NO') . " -->";
     
     return $acceptedCount >= $event['places'];
 }

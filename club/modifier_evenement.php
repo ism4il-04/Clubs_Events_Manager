@@ -33,8 +33,6 @@ if (in_array($event['status'], ['Modification demandée', 'Annulation demandée'
     exit();
 }
 
-// Debug: Show current event status
-echo "<!-- DEBUG: Event status: " . $event['status'] . " -->";
 
 // Get current number of registered participants for validation
 $registeredCount = 0;
